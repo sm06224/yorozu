@@ -312,3 +312,28 @@ textarea {
   color: var(--accent);
   font-size: 0.85rem;
 }
+
+/* --- AI 提案 --- */
+
+.ai-suggest {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ai-reason {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+.ai-error {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--danger);
+}
+
+.triage-actions .btn[data-suggested] {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

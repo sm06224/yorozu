@@ -17,6 +17,7 @@
   "type": "module",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.3",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "react": "^19.2.7",

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getApiKey, KEY_CONSENT_TEXT, setApiKey } from "../ai/key";
 import { db } from "../db/db";
 import {
   getConfiguredProvider,
@@ -15,6 +16,13 @@ export function SettingsView() {
   const [folderName, setFolderName] = useState<string | null>(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const [keyInput, setKeyInput] = useState(() => getApiKey() ?? "");
+  const [keyStatus, setKeyStatus] = useState("");
+
+  function saveKey() {
+    setApiKey(keyInput);
+    setKeyStatus(keyInput.trim() ? "キーを保存しました" : "キーを削除しました");
+  }
 
   useEffect(() => {
     void getSyncKind(db).then(setKind);
@@ -101,6 +109,28 @@ export function SettingsView() {
         </div>
       )}
       {status && <p className="sync-status">{status}</p>}
+
+      <h2>AI (BYOK)</h2>
+      <p className="hint">
+        自分の Anthropic API キーでトリアージ提案を受けられます。キー未設定でも
+        手動トリアージで全機能が使えます
+        (劣化運転)。送信されるのは対象アイテムの
+        題名・本文のみで、「AIに送らない」フラグ付きのアイテムは送信されません。
+      </p>
+      <p className="hint">{KEY_CONSENT_TEXT}</p>
+      <div className="field field-inline">
+        <input
+          type="password"
+          placeholder="sk-ant-…"
+          value={keyInput}
+          onChange={(e) => setKeyInput(e.target.value)}
+          autoComplete="off"
+        />
+        <button type="button" className="btn" onClick={saveKey}>
+          保存
+        </button>
+      </div>
+      {keyStatus && <p className="sync-status">{keyStatus}</p>}
     </section>
   );
 }
