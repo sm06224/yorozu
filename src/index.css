@@ -1,8 +1,8 @@
 :root {
   /* ダーク。コントラストは src/a11y/contrast.test.ts で WCAG AA を強制 */
-  --bg: #1a1a2e;
-  --bg-raised: #252540;
-  --bg-alt: #202038;
+  --bg: #16162a;
+  --bg-raised: #2b2b4a;
+  --bg-alt: #1e1e38;
   --fg: #eaeaf2;
   --fg-muted: #b0b4cc;
   --accent: #7aa2f7;
@@ -13,16 +13,16 @@
   --ok: #7af7a8;
   --border: #6a6d96;
   --hairline: #33335a;
-  --radius: 10px;
+  --radius: 6px;
   color-scheme: dark;
 }
 
 /* 乱視対応: ダーク単独にしない。ライトは純白を避けた低グレア背景 */
 @media (prefers-color-scheme: light) {
   :root {
-    --bg: #f2f2ec;
-    --bg-raised: #fdfdfa;
-    --bg-alt: #eaeae2;
+    --bg: #eaeae0;
+    --bg-raised: #ffffff;
+    --bg-alt: #e0e0d4;
     --fg: #1c1c28;
     --fg-muted: #4d5068;
     --accent: #2f55c0;
@@ -46,7 +46,8 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family:
-    system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    ui-monospace, "SF Mono", Menlo, Consolas, "Osaka-Mono", "MS Gothic",
+    monospace;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
@@ -152,7 +153,7 @@ body {
 }
 
 .btn-ok {
-  color: var(--ok);
+  color: var(--accent);
 }
 
 .btn-danger {
@@ -181,11 +182,10 @@ input[type="password"],
 select,
 textarea {
   padding: 0.35rem 0.45rem;
-  background: var(--bg-alt);
+  background: var(--bg-raised);
   color: var(--fg);
-  border: none;
-  border-bottom: 1.5px solid var(--border);
-  border-radius: 4px 4px 0 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   font-size: 1rem;
   font-family: inherit;
 }
@@ -229,7 +229,7 @@ textarea {
 /* わかりやすい配置: 状態ラベルは固定幅の列にして題名の頭を揃える */
 .status-chip {
   display: inline-block;
-  width: 3.8em;
+  width: 5.4em;
   flex-shrink: 0;
 }
 
@@ -253,20 +253,6 @@ textarea {
   font-weight: 700;
   color: var(--fg-muted);
   white-space: nowrap;
-}
-
-.status-active {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.status-done {
-  color: var(--ok);
-  border-color: var(--ok);
-}
-
-.status-inbox {
-  color: var(--fg);
 }
 
 /* --- チップ (フィルタ) --- */
@@ -423,17 +409,6 @@ textarea {
 
 .kind-deadline {
   color: var(--danger);
-  border-color: var(--danger);
-}
-
-.kind-reask {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.kind-window {
-  color: var(--ok);
-  border-color: var(--ok);
 }
 
 .brief-actions {

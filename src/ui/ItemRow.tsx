@@ -2,12 +2,12 @@ import type { Item, ItemStatus } from "../core";
 import { setStatus } from "../db/repo";
 
 const STATUS_LABELS: Record<ItemStatus, string> = {
-  inbox: "受信箱",
-  active: "進行中",
-  waiting: "待ち",
-  someday: "いつか",
-  done: "完了",
-  archived: "保管",
+  inbox: "📥受信",
+  active: "🔥進行",
+  waiting: "⏳待ち",
+  someday: "🌙いつか",
+  done: "✅完了",
+  archived: "🗄保管",
 };
 
 export function statusLabel(s: ItemStatus): string {
