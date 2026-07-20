@@ -19,4 +19,12 @@ export interface StorageProvider {
   readSnapshot(): Promise<string | null>;
   /** 書き出しファイル (ICS/xlsx 等) の控えを同じ場所に置く (§3、任意実装) */
   putFile?(name: string, data: Blob): Promise<void>;
+  /**
+   * 切り詰め (compaction) で消えた先頭行数 = グローバル行番号の下駄 (任意実装)。
+   * 行番号 API (appendJournal の戻り値 / readJournal の fromLine / journalLength)
+   * は切り詰め後もグローバル行番号のまま変わらない。
+   */
+  journalBase?(): Promise<number>;
+  /** グローバル行番号 upToLine 未満を物理削除する。snapshot 済み範囲のみ呼ぶこと */
+  compactJournal?(upToLine: number): Promise<void>;
 }

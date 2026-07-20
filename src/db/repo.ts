@@ -155,7 +155,24 @@ export function makeRepo(db: YorozuDB) {
     });
   }
 
-  return { captureItem, updateItem, setStatus, applyTriage };
+  /** 完全削除: アイテムと付随ルールを消し、トンボストーンを流す */
+  async function deleteItem(id: string, now = new Date()): Promise<void> {
+    const t = wallClockNow(now);
+    const device = getDeviceId();
+    await db.transaction("rw", db.items, db.rules, db.outbox, async () => {
+      const rules = await db.rules.where("item_id").equals(id).toArray();
+      for (const r of rules) {
+        await db.outbox.add({
+          entry: { op: "delete_rule", device, id: r.id, ts: t },
+        });
+      }
+      await db.rules.where("item_id").equals(id).delete();
+      await db.items.delete(id);
+      await db.outbox.add({ entry: { op: "delete_item", device, id, ts: t } });
+    });
+  }
+
+  return { captureItem, updateItem, setStatus, applyTriage, deleteItem };
 }
 
 const repo = makeRepo(defaultDb);
@@ -163,3 +180,4 @@ export const captureItem = repo.captureItem;
 export const updateItem = repo.updateItem;
 export const setStatus = repo.setStatus;
 export const applyTriage = repo.applyTriage;
+export const deleteItem = repo.deleteItem;
