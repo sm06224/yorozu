@@ -33,11 +33,11 @@ export function ItemRow({ item }: { item: Item }) {
             ✓
           </button>
         )}
-        {closed && (
+        {item.status !== "inbox" && (
           <button
             type="button"
             className="btn btn-ghost"
-            title="受信箱に戻す"
+            title="受信箱に戻して再トリアージ (期日/再確認を設定)"
             onClick={() => void setStatus(item.id, "inbox")}
           >
             ↩
