@@ -16,7 +16,10 @@ const CSP = [
   // blob: は添付画像のローカル object URL 表示用 (#25)。外部読み込みは増えない
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self' https://api.anthropic.com https://graph.microsoft.com https://login.microsoftonline.com",
+  // OneDrive のファイル内容 GET は 302 でダウンロード専用ドメインへ飛ぶ (Graph 仕様)。
+  // リダイレクト先も connect-src の検査対象なので、個人用 OneDrive の
+  // ダウンロードホストを許可する (XHR先が増えるだけで script-src は不変)
+  "connect-src 'self' https://api.anthropic.com https://graph.microsoft.com https://login.microsoftonline.com https://my.microsoftpersonalcontent.com https://*.storage.live.com https://*.1drv.com",
   "worker-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
