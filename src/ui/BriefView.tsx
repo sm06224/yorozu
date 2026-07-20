@@ -6,6 +6,7 @@ import {
   DEFAULT_REMIND_HOUR,
   dateOf,
   type Occurrence,
+  remainingLabel,
   wallClockNow,
 } from "../core";
 import { db } from "../db/db";
@@ -17,11 +18,18 @@ import { msLikelySignedIn } from "../pim/msal";
 // 将来 PimProvider がこの同じ Occurrence 列を Outlook/To Do へ冪等 upsert する。
 
 const KIND_LABELS: Record<Occurrence["kind"], string> = {
-  deadline: "⏰締切",
-  reask: "🔁再確認",
-  window: "📅期間",
-  brief: "📌ピン",
+  deadline: "⏰",
+  reask: "🔁",
+  window: "📅",
+  brief: "📌",
 };
+
+function stripPrefix(label: string): string {
+  return label.replace(
+    /^(締切まで\d+日|締切|まだ要る\?|開始|明日終了|ブリーフ): /,
+    "",
+  );
+}
 
 export function BriefView() {
   const [pimStatus, setPimStatus] = useState("");
@@ -116,10 +124,15 @@ export function BriefView() {
           <ul className="item-list">
             {list.map((o) => (
               <li key={o.key} className="item-row">
-                <span className={`status-chip kind-${o.kind}`}>
+                <span className={`kind-mark kind-${o.kind}`}>
                   {KIND_LABELS[o.kind]}
                 </span>
-                <span className="item-title">{o.label}</span>
+                <span
+                  className={`brief-delta ${o.at < now ? "kind-deadline" : ""}`}
+                >
+                  {remainingLabel(now, o.at)}
+                </span>
+                <span className="item-title">{stripPrefix(o.label)}</span>
                 <span className="brief-time">{o.at.slice(11)}</span>
               </li>
             ))}

@@ -98,6 +98,11 @@ export function makeRepo(db: YorozuDB) {
       if (saved) await db.outbox.add({ entry: outboxUpsertItem(saved) });
 
       const old = await db.rules.where("item_id").equals(itemId).toArray();
+      const oldDeadline = old.find((r) => r.kind === "deadline");
+      const originalDue =
+        oldDeadline?.kind === "deadline"
+          ? (oldDeadline.original_due ?? oldDeadline.due)
+          : null;
       for (const r of old) {
         await db.outbox.add({
           entry: { op: "delete_rule", device, id: r.id, ts: t },
@@ -113,6 +118,7 @@ export function makeRepo(db: YorozuDB) {
             item_id: itemId,
             kind: "deadline",
             due: `${d.due.date}T${d.due.time ?? "09:00"}`,
+            original_due: originalDue,
             lead_days: d.due.lead_days ?? [7, 1, 0],
             enabled: true,
             created_at: t,

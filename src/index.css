@@ -401,6 +401,16 @@ textarea {
   margin: 0.5rem 0 0.15rem;
 }
 
+.kind-mark {
+  flex-shrink: 0;
+}
+
+.brief-delta {
+  flex-shrink: 0;
+  width: 3.6em;
+  font-weight: 700;
+}
+
 .brief-time {
   color: var(--fg-muted);
   font-size: 0.85rem;

@@ -51,3 +51,14 @@ export function atHour(d: LocalDate, hour: number): LocalDateTime {
 export function diffDays(a: LocalDate, b: LocalDate): number {
   return Math.round((toDate(a).getTime() - toDate(b).getTime()) / 86_400_000);
 }
+
+/** 残り時間の短縮表記: +2D / +5H / -1D (負 = 超過)。等幅前提の固定桁 */
+export function remainingLabel(now: LocalDateTime, at: LocalDateTime): string {
+  const mins = Math.round(
+    (toDate(at).getTime() - toDate(now).getTime()) / 60000,
+  );
+  const sign = mins < 0 ? "-" : "+";
+  const abs = Math.abs(mins);
+  if (abs >= 1440) return `${sign}${Math.floor(abs / 1440)}D`;
+  return `${sign}${Math.floor(abs / 60)}H`;
+}

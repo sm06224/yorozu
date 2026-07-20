@@ -48,13 +48,28 @@ const OUTPUT_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-export function buildPrompt(item: Item, today: LocalDate): string {
+export interface DueContext {
+  due: string | null;
+  original_due: string | null;
+}
+
+export function buildPrompt(
+  item: Item,
+  today: LocalDate,
+  ctx?: DueContext,
+): string {
   return [
     `今日は ${today}。以下は個人タスク管理の受信箱に入った1件のメモです。`,
     "このメモをトリアージし、指定のスキーマで提案を返してください。",
+    "先送りを提案する場合は、単純な繰り返しの先送りをせず、",
+    "当初の期限と残り日数から優先すべきかを判断し、",
+    "当初の期限を超えず精神的・スケジュール的に無理のない期日を提案してください。",
+    "判断根拠は reason に含めてください。",
     "",
     `題名: ${item.title}`,
     item.body ? `本文: ${item.body}` : "",
+    ctx?.due ? `現在の期日: ${ctx.due}` : "",
+    ctx?.original_due ? `当初の期限: ${ctx.original_due}` : "",
   ]
     .filter((l) => l !== "")
     .join("\n");

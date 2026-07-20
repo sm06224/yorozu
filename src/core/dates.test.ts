@@ -1,6 +1,13 @@
 import fc from "fast-check";
 import { describe, expect, test } from "vitest";
-import { addDays, atHour, dateOf, diffDays, toLocalDateTime } from "./dates";
+import {
+  addDays,
+  atHour,
+  dateOf,
+  diffDays,
+  remainingLabel,
+  toLocalDateTime,
+} from "./dates";
 
 describe("dates", () => {
   test("addDays が月境界・年境界を越える", () => {
@@ -21,6 +28,14 @@ describe("dates", () => {
     expect(toLocalDateTime(new Date(Date.UTC(2026, 6, 20, 8, 5)))).toBe(
       "2026-07-20T08:05",
     );
+  });
+
+  test("remainingLabel: +D/+H/-D 表記", () => {
+    expect(remainingLabel("2026-07-20T09:00", "2026-07-22T09:00")).toBe("+2D");
+    expect(remainingLabel("2026-07-20T09:00", "2026-07-20T14:30")).toBe("+5H");
+    expect(remainingLabel("2026-07-20T09:00", "2026-07-20T09:20")).toBe("+0H");
+    expect(remainingLabel("2026-07-22T09:00", "2026-07-20T09:00")).toBe("-2D");
+    expect(remainingLabel("2026-07-20T12:00", "2026-07-20T09:00")).toBe("-3H");
   });
 
   test("プロパティ: addDays の往復とdiffDaysの整合", () => {

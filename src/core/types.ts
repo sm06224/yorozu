@@ -62,6 +62,8 @@ export const DeadlineRuleSchema = z.object({
   ...ruleBase,
   kind: z.literal("deadline"),
   due: LocalDateTimeSchema,
+  /** 最初に設定した期限。期日を動かしても保持し、先送り判断の基準にする */
+  original_due: LocalDateTimeSchema.nullable().default(null),
   lead_days: z.array(z.int().nonnegative()).min(1),
 });
 
