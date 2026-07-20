@@ -21,16 +21,35 @@ async function getToken(): Promise<string> {
   return t;
 }
 
-async function readText(name: string): Promise<string | null> {
-  const res = await fetch(`${BASE}:/${name}:/content`, {
+// ファイル内容の取得は2段: (1) Graph でメタデータから downloadUrl を得る (JSON 直返し)、
+// (2) 事前認証済み downloadUrl を Authorization ヘッダ無しで読む。
+// /content 直 GET は 302 でダウンロードドメインへ飛び、Safari では
+// Authorization 付きクロスオリジンリダイレクトが "Load failed" になるため使わない。
+async function downloadUrlOf(name: string): Promise<string | null> {
+  const res = await fetch(`${BASE}:/${encodeURIComponent(name)}`, {
     headers: { Authorization: `Bearer ${await getToken()}` },
   });
   if (res.status === 404) return null;
   if (!res.ok)
     throw new Error(
-      `OneDrive 読込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      `OneDrive メタ取得 ${res.status}: ${(await res.text()).slice(0, 200)}`,
     );
-  return res.text();
+  const meta = (await res.json()) as Record<string, unknown>;
+  const url = meta["@microsoft.graph.downloadUrl"];
+  return typeof url === "string" ? url : null;
+}
+
+async function readBlob(name: string): Promise<Blob | null> {
+  const url = await downloadUrlOf(name);
+  if (!url) return null;
+  const res = await fetch(url); // 事前認証済み URL: ヘッダ不要・CORS 可
+  if (!res.ok) throw new Error(`OneDrive ダウンロード ${res.status}`);
+  return res.blob();
+}
+
+async function readText(name: string): Promise<string | null> {
+  const blob = await readBlob(name);
+  return blob ? blob.text() : null;
 }
 
 async function writeText(name: string, content: string): Promise<void> {
@@ -108,14 +127,6 @@ export class OneDriveStorageProvider implements StorageProvider {
   }
 
   async getFile(name: string): Promise<Blob | null> {
-    const res = await fetch(`${BASE}:/${name}:/content`, {
-      headers: { Authorization: `Bearer ${await getToken()}` },
-    });
-    if (res.status === 404) return null;
-    if (!res.ok)
-      throw new Error(
-        `OneDrive 読込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
-      );
-    return res.blob();
+    return readBlob(name);
   }
 }
