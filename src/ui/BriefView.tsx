@@ -17,10 +17,10 @@ import { msLikelySignedIn } from "../pim/msal";
 // 将来 PimProvider がこの同じ Occurrence 列を Outlook/To Do へ冪等 upsert する。
 
 const KIND_LABELS: Record<Occurrence["kind"], string> = {
-  deadline: "締切",
-  reask: "再確認",
-  window: "期間",
-  brief: "ピン",
+  deadline: "⏰締切",
+  reask: "🔁再確認",
+  window: "📅期間",
+  brief: "📌ピン",
 };
 
 export function BriefView() {
