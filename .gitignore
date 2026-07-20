@@ -8,3 +8,5 @@ coverage/
 !.env.example
 *.local
 .vite/
+test-results/
+playwright-report/
