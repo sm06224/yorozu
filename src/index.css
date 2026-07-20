@@ -373,3 +373,8 @@ textarea {
   color: var(--ok);
   border-color: var(--ok);
 }
+
+.brief-actions {
+  display: flex;
+  gap: 0.4rem;
+}

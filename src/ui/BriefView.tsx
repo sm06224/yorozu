@@ -1,4 +1,5 @@
 import { useLiveQuery } from "dexie-react-hooks";
+import { useState } from "react";
 import {
   computeOccurrences,
   DEFAULT_HORIZON_DAYS,
@@ -9,6 +10,7 @@ import {
 } from "../core";
 import { db } from "../db/db";
 import { occurrencesToIcs } from "../export/ics";
+import { msLikelySignedIn } from "../pim/msal";
 
 // 朝ブリーフ (設計書 §2, §10-9 の表示側):
 // 先読み N=7 日分の発火予定を決定論で実体化して見せる。
@@ -22,6 +24,8 @@ const KIND_LABELS: Record<Occurrence["kind"], string> = {
 };
 
 export function BriefView() {
+  const [pimStatus, setPimStatus] = useState("");
+  const [pimBusy, setPimBusy] = useState(false);
   const data = useLiveQuery(async () => {
     const [items, rules] = await Promise.all([
       db.items.toArray(),
@@ -48,6 +52,22 @@ export function BriefView() {
     byDate.set(d, list);
   }
 
+  async function writeToOutlook() {
+    setPimBusy(true);
+    setPimStatus("Outlook へ書き込み中…");
+    try {
+      const { OutlookPimProvider } = await import("../pim/outlook");
+      const r = await new OutlookPimProvider().upsertOccurrences(occurrences);
+      setPimStatus(
+        `✅ Outlook へ upsert: 新規 ${r.created} 件 / 既存スキップ ${r.skipped} 件`,
+      );
+    } catch (e) {
+      setPimStatus(`❌ 失敗: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setPimBusy(false);
+    }
+  }
+
   function downloadIcs() {
     const ics = occurrencesToIcs(occurrences, now);
     const blob = new Blob([ics], { type: "text/calendar" });
@@ -63,15 +83,28 @@ export function BriefView() {
     <section className="brief">
       <div className="brief-header">
         <p className="hint">今日から {horizon.days} 日分の発火予定</p>
-        <button
-          type="button"
-          className="btn"
-          disabled={occurrences.length === 0}
-          onClick={downloadIcs}
-        >
-          ICS書き出し
-        </button>
+        <span className="brief-actions">
+          {msLikelySignedIn() && (
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={occurrences.length === 0 || pimBusy}
+              onClick={() => void writeToOutlook()}
+            >
+              Outlookへ書き込む
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn"
+            disabled={occurrences.length === 0}
+            onClick={downloadIcs}
+          >
+            ICS書き出し
+          </button>
+        </span>
       </div>
+      {pimStatus && <p className="sync-status">{pimStatus}</p>}
       {occurrences.length === 0 && (
         <p className="empty">
           予定はありません。トリアージで期日や再確認を設定すると、ここに現れます。
