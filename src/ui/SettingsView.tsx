@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getApiKey, KEY_CONSENT_TEXT, setApiKey } from "../ai/key";
 import { wallClockNow } from "../core";
 import { db } from "../db/db";
@@ -31,8 +31,13 @@ export function SettingsView() {
   const [msStatus, setMsStatus] = useState("");
   const [msBusy, setMsBusy] = useState(false);
 
+  const kindTouched = useRef(false);
+
   useEffect(() => {
-    void getSyncKind(db).then(setKind);
+    // 初期読込がユーザー操作より遅れて解決した場合に選択を巻き戻さない
+    void getSyncKind(db).then((k) => {
+      if (!kindTouched.current) setKind(k);
+    });
     // 常に MSAL に問い合わせる (リダイレクト戻り処理の完了を ensureMsal 経由で待つ)。
     // マウント時のヒューリスティック判定だけだと、サインインから戻った直後に
     // 「サインイン中」表示へ切り替わらないバグがあった (Issue #15)
@@ -66,6 +71,7 @@ export function SettingsView() {
   }
 
   async function changeKind(next: SyncKind) {
+    kindTouched.current = true;
     setKind(next);
     await setSyncKind(db, next);
     setStatus("");
