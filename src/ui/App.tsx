@@ -1,6 +1,7 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { db } from "../db/db";
+import { msLikelySignedIn } from "../pim/msal";
 import { getConfiguredProvider } from "../sync/config";
 import { syncOnce } from "../sync/engine";
 import { BriefView } from "./BriefView";
@@ -28,6 +29,15 @@ export function App() {
       const provider = await getConfiguredProvider(db, false);
       if (provider) await syncOnce(db, provider).catch(() => undefined);
     })();
+  }, []);
+
+  // OAuth リダイレクトからの戻り (URL に code がある時) と既存サインインの復元
+  useEffect(() => {
+    if (window.location.hash.includes("code=") || msLikelySignedIn()) {
+      void import("../pim/msal").then((m) =>
+        m.ensureMsal().catch(() => undefined),
+      );
+    }
   }, []);
 
   const inboxCount = useLiveQuery(

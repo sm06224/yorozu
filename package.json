@@ -19,6 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",
+    "@azure/msal-browser": "^5.17.1",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "react": "^19.2.7",
