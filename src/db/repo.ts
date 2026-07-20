@@ -23,6 +23,7 @@ export interface TriageDecision {
   /** 再確認間隔 (日)。someday/waiting 向け */
   reask_days?: number;
   ai_allowed?: boolean;
+  estimate_minutes?: number | null;
 }
 
 export function makeRepo(db: YorozuDB) {
@@ -92,6 +93,9 @@ export function makeRepo(db: YorozuDB) {
         triaged_at: t,
         updated_at: t,
         ...(d.ai_allowed === undefined ? {} : { ai_allowed: d.ai_allowed }),
+        ...(d.estimate_minutes === undefined
+          ? {}
+          : { estimate_minutes: d.estimate_minutes }),
         ...(d.status === "done" ? { done_at: t } : {}),
       });
       const saved = await db.items.get(itemId);

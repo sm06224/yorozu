@@ -24,6 +24,11 @@ const KIND_LABELS: Record<Occurrence["kind"], string> = {
   brief: "📌",
 };
 
+function deltaClass(now: string, at: string): string {
+  if (at < now) return "kind-deadline";
+  return remainingLabel(now, at).endsWith("D") ? "delta-d" : "delta-h";
+}
+
 function stripPrefix(label: string): string {
   return label.replace(
     /^(締切まで\d+日|締切|まだ要る\?|開始|明日終了|ブリーフ): /,
@@ -127,9 +132,7 @@ export function BriefView() {
                 <span className={`kind-mark kind-${o.kind}`}>
                   {KIND_LABELS[o.kind]}
                 </span>
-                <span
-                  className={`brief-delta ${o.at < now ? "kind-deadline" : ""}`}
-                >
+                <span className={`brief-delta ${deltaClass(now, o.at)}`}>
                   {remainingLabel(now, o.at)}
                 </span>
                 <span className="item-title">{stripPrefix(o.label)}</span>

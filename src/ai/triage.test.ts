@@ -34,6 +34,8 @@ describe("ai/triage", () => {
       status: "active",
       due: "2026-08-01",
       reask_days: 0,
+      estimated_minutes: 15,
+      first_step: "オンラインバンキングを開く",
       reason: "期日が近い支払いのため",
     });
     expect(s.status).toBe("active");

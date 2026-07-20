@@ -37,6 +37,8 @@ export const ItemSchema = z.object({
   tags: z.array(z.string().min(1)),
   // false = このアイテムを AI に送らない (v0.1 §7)
   ai_allowed: z.boolean(),
+  /** 見積もり作業時間 (分)。AI提案 or 手動 */
+  estimate_minutes: z.int().positive().nullable().default(null),
   created_at: LocalDateTimeSchema,
   // LWW の勝敗キー (設計書 §3)
   updated_at: LocalDateTimeSchema,

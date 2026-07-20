@@ -411,6 +411,15 @@ textarea {
   font-weight: 700;
 }
 
+/* 猶予の単位を色で区別: 日(D)=落ち着いた色 / 時間(H)=accent / 超過=danger */
+.delta-d {
+  color: var(--fg-muted);
+}
+
+.delta-h {
+  color: var(--accent);
+}
+
 .brief-time {
   color: var(--fg-muted);
   font-size: 0.85rem;

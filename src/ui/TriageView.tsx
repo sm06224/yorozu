@@ -66,6 +66,8 @@ export function TriageView() {
     const d: TriageDecision = { status, ai_allowed: aiAllowed };
     if (due) d.due = { date: due };
     if (reask > 0) d.reask_days = reask;
+    if (suggestion?.estimated_minutes)
+      d.estimate_minutes = suggestion.estimated_minutes;
     await applyTriage(current.id, d);
     setDue("");
     setReask(0);
@@ -92,8 +94,16 @@ export function TriageView() {
             </button>
             {suggestion && (
               <p className="ai-reason">
-                提案: <strong>{statusJa(suggestion.status)}</strong> —{" "}
-                {suggestion.reason}
+                提案: <strong>{statusJa(suggestion.status)}</strong>
+                {suggestion.estimated_minutes
+                  ? ` (見積 ${suggestion.estimated_minutes}分)`
+                  : ""}{" "}
+                — {suggestion.reason}
+                {suggestion.first_step && (
+                  <>
+                    <br />👣 まず: {suggestion.first_step}
+                  </>
+                )}
               </p>
             )}
             {aiError && <p className="ai-error">{aiError}</p>}
