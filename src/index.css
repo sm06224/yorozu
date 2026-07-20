@@ -1,15 +1,38 @@
 :root {
+  /* ダーク。コントラストは src/a11y/contrast.test.ts で WCAG AA を強制 */
   --bg: #1a1a2e;
   --bg-raised: #252540;
+  --bg-alt: #202038;
   --fg: #eaeaf2;
   --fg-muted: #b0b4cc;
   --accent: #7aa2f7;
-  --accent-strong: #5d87e8;
-  --danger: #f77a7a;
+  --accent-strong: #3f63c9;
+  --on-accent: #101020;
+  --on-accent-strong: #ffffff;
+  --danger: #f78a8a;
   --ok: #7af7a8;
-  --border: #40406a;
+  --border: #6a6d96;
   --radius: 10px;
   color-scheme: dark;
+}
+
+/* 乱視対応: ダーク単独にしない。ライトは純白を避けた低グレア背景 */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f2f2ec;
+    --bg-raised: #fdfdfa;
+    --bg-alt: #eaeae2;
+    --fg: #1c1c28;
+    --fg-muted: #4d5068;
+    --accent: #2f55c0;
+    --accent-strong: #2b4faf;
+    --on-accent: #ffffff;
+    --on-accent-strong: #ffffff;
+    --danger: #b3261e;
+    --ok: #176b36;
+    --border: #6f7290;
+    color-scheme: light;
+  }
 }
 
 * {
@@ -94,7 +117,7 @@ body {
   margin-left: 0.15rem;
   padding: 0 0.35rem;
   background: var(--accent);
-  color: #101020;
+  color: var(--on-accent);
   border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
@@ -120,6 +143,7 @@ body {
 .btn-primary {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
+  color: var(--on-accent-strong);
 }
 
 .btn-ok {
@@ -187,6 +211,11 @@ textarea {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+/* 斜視 (左右視差) の段ずれ対策: 縞で行の水平アンカーを明確にする */
+.item-list > .item-row:nth-child(even) {
+  background: var(--bg-alt);
 }
 
 .item-closed .item-title {
