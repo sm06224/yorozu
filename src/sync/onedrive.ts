@@ -74,4 +74,19 @@ export class OneDriveStorageProvider implements StorageProvider {
   async readSnapshot(): Promise<string | null> {
     return readText("snapshot.json");
   }
+
+  async putFile(name: string, data: Blob): Promise<void> {
+    const res = await fetch(`${BASE}:/${name}:/content`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${await getToken()}`,
+        "Content-Type": data.type || "application/octet-stream",
+      },
+      body: data,
+    });
+    if (!res.ok)
+      throw new Error(
+        `OneDrive 書込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
+  }
 }

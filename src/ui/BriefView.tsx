@@ -88,15 +88,15 @@ export function BriefView() {
     }
   }
 
-  function downloadIcs() {
+  async function downloadIcs() {
     const ics = occurrencesToIcs(occurrences, now);
     const blob = new Blob([ics], { type: "text/calendar" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `yorozu-${horizon.from}.ics`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const name = `yorozu-${horizon.from}.ics`;
+    const save = await import("../export/save");
+    save.downloadBlob(name, blob);
+    if (await save.saveCopyToRemote(name, blob).catch(() => false)) {
+      setPimStatus("✅ ICS を書き出し (同期先にも控えを保存)");
+    }
   }
 
   return (
@@ -118,7 +118,7 @@ export function BriefView() {
           type="button"
           className="btn"
           disabled={occurrences.length === 0}
-          onClick={downloadIcs}
+          onClick={() => void downloadIcs()}
         >
           📤 予定表に送る (ICS)
         </button>

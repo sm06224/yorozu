@@ -59,6 +59,14 @@ test("キャプチャ → トリアージ → ブリーフ → 同期 → リロ
   await page.getByRole("button", { name: "一覧" }).click();
   await expect(page.getByText("牛乳を買う")).toBeVisible();
   await expect(page.getByText("請求書を払う")).toBeVisible();
+
+  // 6. 週次レビュー xlsx が生成・ダウンロードされる (CSP 下で動くことの実証)
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: /週次レビュー/ }).click();
+  expect((await download).suggestedFilename()).toMatch(
+    /^yorozu-review-\d{4}-\d{2}-\d{2}\.xlsx$/,
+  );
+  await expect(page.getByText(/書き出し完了/)).toBeVisible();
 });
 
 test("再トリアージ導線: 一覧の↩ → 期日設定 → 予定に発火予定が出る", async ({
