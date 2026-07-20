@@ -19,6 +19,8 @@ export interface StorageProvider {
   readSnapshot(): Promise<string | null>;
   /** 書き出しファイル (ICS/xlsx 等) の控えを同じ場所に置く (§3、任意実装) */
   putFile?(name: string, data: Blob): Promise<void>;
+  /** putFile で置いたファイルを読む (添付の遅延ダウンロード用、任意実装) */
+  getFile?(name: string): Promise<Blob | null>;
   /**
    * 切り詰め (compaction) で消えた先頭行数 = グローバル行番号の下駄 (任意実装)。
    * 行番号 API (appendJournal の戻り値 / readJournal の fromLine / journalLength)

@@ -135,4 +135,13 @@ export class FsaStorageProvider implements StorageProvider {
     await writable.write(data);
     await writable.close();
   }
+
+  async getFile(name: string): Promise<Blob | null> {
+    try {
+      const handle = await this.dir.getFileHandle(name);
+      return await handle.getFile();
+    } catch {
+      return null;
+    }
+  }
 }

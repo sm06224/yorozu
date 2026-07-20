@@ -24,10 +24,13 @@ export function App() {
   const [tab, setTab] = useState<TabKey>("inbox");
 
   // 開時同期 (設計書 §2): アプリを開いた時に静かに追いつく。失敗は無視。
+  // 添付 blob の保留アップロードもここで追いつかせる (#25)
   useEffect(() => {
     void (async () => {
       const provider = await getConfiguredProvider(db, false);
       if (provider) await syncOnce(db, provider).catch(() => undefined);
+      const { pushPendingAttachments } = await import("../db/attachments");
+      await pushPendingAttachments().catch(() => undefined);
     })();
   }, []);
 
