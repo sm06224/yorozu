@@ -115,6 +115,9 @@ export function SettingsView() {
         >
           <option value="none">なし</option>
           <option value="idb">このブラウザ (IndexedDB / 動作確認用)</option>
+          <option value="onedrive">
+            OneDrive (approot / 要 Microsoft サインイン)
+          </option>
           <option value="fsa" disabled={!fsaSupported()}>
             フォルダ (File System Access
             {fsaSupported() ? "" : " / このブラウザ非対応"})

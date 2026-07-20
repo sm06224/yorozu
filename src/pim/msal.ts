@@ -62,8 +62,13 @@ export async function msSignOut(): Promise<void> {
   await pca.logoutRedirect();
 }
 
-/** アクセストークン取得。サイレント失敗時はリダイレクトで再認証 */
-export async function msAccessToken(): Promise<string | null> {
+/**
+ * アクセストークン取得。サイレント失敗時、interactive=true ならリダイレクトで
+ * 再認証する。false (バックグラウンド同期など) は静かに null を返す。
+ */
+export async function msAccessToken(
+  interactive = true,
+): Promise<string | null> {
   const pca = await ensureMsal();
   const account = await msAccount();
   if (!account) return null;
@@ -71,8 +76,10 @@ export async function msAccessToken(): Promise<string | null> {
     const r = await pca.acquireTokenSilent({ scopes: GRAPH_SCOPES, account });
     return r.accessToken;
   } catch {
-    await pca.acquireTokenRedirect({ scopes: GRAPH_SCOPES, account });
-    return null; // リダイレクトで戻ってくる
+    if (interactive) {
+      await pca.acquireTokenRedirect({ scopes: GRAPH_SCOPES, account });
+    }
+    return null; // interactive ならリダイレクトで戻ってくる
   }
 }
 
