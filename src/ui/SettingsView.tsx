@@ -4,6 +4,7 @@ import { wallClockNow } from "../core";
 import { db } from "../db/db";
 import { buildTestEvent, createCalendarEvent } from "../pim/graph";
 import { msAccessToken, msAccount, msSignIn, msSignOut } from "../pim/msal";
+import { isAutoPimEnabled, setAutoPimEnabled } from "../pim/sync";
 import {
   getConfiguredProvider,
   getSyncKind,
@@ -30,6 +31,7 @@ export function SettingsView() {
   const [msUser, setMsUser] = useState<string | null>(null);
   const [msStatus, setMsStatus] = useState("");
   const [msBusy, setMsBusy] = useState(false);
+  const [pimAuto, setPimAuto] = useState(() => isAutoPimEnabled());
 
   const kindTouched = useRef(false);
 
@@ -187,6 +189,17 @@ export function SettingsView() {
       {msUser ? (
         <>
           <p className="hint">サインイン中: {msUser}</p>
+          <label className="field field-inline">
+            <input
+              type="checkbox"
+              checked={pimAuto}
+              onChange={(e) => {
+                setAutoPimEnabled(e.target.checked);
+                setPimAuto(e.target.checked);
+              }}
+            />
+            <span>📆 アプリを開いた時に Outlook へ自動書き込み</span>
+          </label>
           <div className="field field-inline">
             <button
               type="button"

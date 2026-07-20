@@ -8,17 +8,21 @@ import type { Occurrence } from "../core";
 export interface UpsertResult {
   created: number;
   skipped: number;
-  /** horizon 内なのに PIM 側から消えていた等の差分 (delta 表示用) */
-  notes: string[];
+  /** 過去に書いたが PIM 側で消されていた件数 (再作成しない = PIM が勝つ) */
+  respected: number;
 }
 
+// 意思決定 (planUpsert) はアダプタの外 (pim/plan.ts + pim/sync.ts)。
+// アダプタは「期間内の既存キー列挙」と「作成」だけを担う。
 export interface PimProvider {
   readonly kind: string;
-  /**
-   * 発火予定を冪等 upsert する。既に同じキーのエントリがあれば作らない。
-   * PIM 側の手動編集 (移動・削除・完了) はそのまま尊重する = 「PIM が勝つ」(§9)。
-   */
-  upsertOccurrences(occurrences: readonly Occurrence[]): Promise<UpsertResult>;
+  /** 期間内にある yorozu 生成エントリの突合キー集合 */
+  listExistingKeys(
+    from: Occurrence["at"],
+    to: Occurrence["at"],
+  ): Promise<Set<string>>;
+  /** エントリを作成する (呼び出し側が新規と判断したものだけ渡す) */
+  createEntries(occurrences: readonly Occurrence[]): Promise<void>;
 }
 
 /** 突合キーを本文に埋める/取り出すための目印 */

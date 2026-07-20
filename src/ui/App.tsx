@@ -40,6 +40,14 @@ export function App() {
     }
   }, []);
 
+  // 開時 PIM 書き込み (#17): サインイン済みなら発火予定を Outlook へ静かに upsert。
+  // 「通知を作らず、書き込む」— アプリを開くたびに先が書き込まれている状態を保つ。
+  useEffect(() => {
+    void import("../pim/sync").then((m) =>
+      m.autoPimUpsert().catch(() => undefined),
+    );
+  }, []);
+
   const inboxCount = useLiveQuery(
     () => db.items.where("status").equals("inbox").count(),
     [],
