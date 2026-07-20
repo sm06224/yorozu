@@ -45,7 +45,7 @@ body {
   color: var(--fg);
   font-family:
     system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
-  line-height: 1.6;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -56,7 +56,7 @@ body {
 .app {
   max-width: 640px;
   margin: 0 auto;
-  padding: 0.75rem;
+  padding: 0.5rem;
   padding-bottom: calc(1rem + env(safe-area-inset-bottom));
 }
 
@@ -82,15 +82,17 @@ body {
 .empty {
   color: var(--fg-muted);
   text-align: center;
-  padding: 1.2rem 0;
+  padding: 0.8rem 0;
 }
 
 /* --- ナビ --- */
 
 .tab-nav {
   display: flex;
-  gap: 0.25rem;
-  margin: 0.6rem 0;
+  gap: 0.2rem;
+  margin: 0.35rem 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.35rem;
 }
 
 .tab {
@@ -196,21 +198,27 @@ textarea {
 
 .item-list {
   list-style: none;
-  margin: 0.6rem 0;
+  margin: 0.4rem 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .item-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
+  padding: 0.35rem 0.6rem;
   background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-bottom: 1px solid var(--border);
+}
+
+.item-list > .item-row:last-child {
+  border-bottom: none;
 }
 
 /* 斜視 (左右視差) の段ずれ対策: 縞で行の水平アンカーを明確にする */
@@ -261,7 +269,7 @@ textarea {
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .chip {
@@ -285,16 +293,17 @@ textarea {
 .triage-progress {
   color: var(--fg-muted);
   font-size: 0.85rem;
+  margin: 0.2rem 0;
 }
 
 .triage-card {
   background: var(--bg-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.9rem;
+  padding: 0.6rem;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.45rem;
 }
 
 .triage-title {
@@ -336,12 +345,14 @@ textarea {
 /* --- 設定 --- */
 
 .settings h2 {
-  font-size: 1.05rem;
-  margin: 1rem 0 0.3rem;
+  font-size: 1rem;
+  margin: 0.7rem 0 0.15rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.15rem;
 }
 
 .settings .field {
-  margin: 0.8rem 0;
+  margin: 0.45rem 0;
 }
 
 .hint {
@@ -389,9 +400,10 @@ textarea {
 }
 
 .brief-date {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: var(--fg-muted);
-  margin: 1rem 0 0.2rem;
+  margin: 0.5rem 0 0.15rem;
 }
 
 .brief-time {
