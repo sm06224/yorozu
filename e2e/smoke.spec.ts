@@ -55,6 +55,35 @@ test("キャプチャ → トリアージ → ブリーフ → 同期 → リロ
   await expect(page.getByText("請求書を払う")).toBeVisible();
 });
 
+test("再トリアージ導線: 一覧の↩ → 期日設定 → 予定に発火予定が出る", async ({
+  page,
+}) => {
+  await page.goto("/");
+  // 期日なしでトリアージ済みのアイテムを作る
+  await page.getByPlaceholder("頭の中のものを放り込む…").fill("後から期日");
+  await page.getByRole("button", { name: "追加" }).click();
+  await page.getByRole("button", { name: /トリアージ/ }).click();
+  await page.getByRole("button", { name: "今やる" }).click();
+  await expect(page.getByText("トリアージ完了")).toBeVisible();
+
+  // 一覧 → ↩ で受信箱に戻す
+  await page.getByRole("button", { name: "一覧" }).click();
+  const row = page.locator(".item-row", { hasText: "後から期日" }).first();
+  await row.getByTitle(/受信箱に戻して再トリアージ/).click();
+
+  // 再トリアージで期日を設定
+  await page.getByRole("button", { name: /トリアージ/ }).click();
+  const due = new Date();
+  due.setDate(due.getDate() + 2);
+  await page.locator('input[type="date"]').fill(due.toISOString().slice(0, 10));
+  await page.getByRole("button", { name: "今やる" }).click();
+
+  // 予定タブに発火予定が現れ、ICS ボタンが有効
+  await page.getByRole("button", { name: "予定" }).click();
+  await expect(page.getByText(/締切.*後から期日/).first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "ICS書き出し" })).toBeEnabled();
+});
+
 test("CSP メタが本番HTMLに存在し外部スクリプトがない", async ({ page }) => {
   await page.goto("/");
   const csp = page.locator('meta[http-equiv="Content-Security-Policy"]');
