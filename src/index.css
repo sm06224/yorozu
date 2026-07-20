@@ -337,3 +337,39 @@ textarea {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* --- ブリーフ --- */
+
+.brief-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.brief-date {
+  font-size: 0.9rem;
+  color: var(--fg-muted);
+  margin: 1rem 0 0.2rem;
+}
+
+.brief-time {
+  color: var(--fg-muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.kind-deadline {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.kind-reask {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.kind-window {
+  color: var(--ok);
+  border-color: var(--ok);
+}
