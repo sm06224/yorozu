@@ -3,13 +3,7 @@ import { getApiKey, KEY_CONSENT_TEXT, setApiKey } from "../ai/key";
 import { wallClockNow } from "../core";
 import { db } from "../db/db";
 import { buildTestEvent, createCalendarEvent } from "../pim/graph";
-import {
-  msAccessToken,
-  msAccount,
-  msLikelySignedIn,
-  msSignIn,
-  msSignOut,
-} from "../pim/msal";
+import { msAccessToken, msAccount, msSignIn, msSignOut } from "../pim/msal";
 import {
   getConfiguredProvider,
   getSyncKind,
@@ -39,9 +33,12 @@ export function SettingsView() {
 
   useEffect(() => {
     void getSyncKind(db).then(setKind);
-    if (msLikelySignedIn()) {
-      void msAccount().then((a) => setMsUser(a?.username ?? null));
-    }
+    // 常に MSAL に問い合わせる (リダイレクト戻り処理の完了を ensureMsal 経由で待つ)。
+    // マウント時のヒューリスティック判定だけだと、サインインから戻った直後に
+    // 「サインイン中」表示へ切り替わらないバグがあった (Issue #15)
+    void msAccount()
+      .then((a) => setMsUser(a?.username ?? null))
+      .catch(() => setMsUser(null));
   }, []);
 
   async function msTestWrite() {

@@ -76,9 +76,7 @@ export async function msAccessToken(): Promise<string | null> {
   }
 }
 
-/** msal-browser を読み込まずに「サインイン済みらしいか」を判定 (起動コスト節約) */
+/** msal-browser を読み込まずに「MSALを使った形跡があるか」を判定 (起動コスト節約) */
 export function msLikelySignedIn(): boolean {
-  return Object.keys(localStorage).some((k) =>
-    k.startsWith("msal.account.keys"),
-  );
+  return Object.keys(localStorage).some((k) => k.startsWith("msal."));
 }
