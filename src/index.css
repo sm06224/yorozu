@@ -12,6 +12,7 @@
   --danger: #f78a8a;
   --ok: #7af7a8;
   --border: #6a6d96;
+  --hairline: #33335a;
   --radius: 10px;
   color-scheme: dark;
 }
@@ -31,6 +32,7 @@
     --danger: #b3261e;
     --ok: #176b36;
     --border: #6f7290;
+    --hairline: #d9d9cf;
     color-scheme: light;
   }
 }
@@ -90,50 +92,44 @@ body {
 .tab-nav {
   display: flex;
   gap: 0.2rem;
-  margin: 0.35rem 0;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.35rem;
+  margin: 0.3rem 0 0.5rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .tab {
   flex: 1;
-  padding: 0.45rem 0.1rem;
-  background: transparent;
+  padding: 0.35rem 0.1rem;
+  background: none;
   color: var(--fg-muted);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  border: none;
+  font-size: 0.85rem;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .tab-on {
   color: var(--fg);
-  background: var(--bg-raised);
-  border-color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .badge {
-  display: inline-block;
   margin-left: 0.15rem;
-  padding: 0 0.35rem;
-  background: var(--accent);
-  color: var(--on-accent);
-  border-radius: 999px;
-  font-size: 0.7rem;
+  color: var(--accent);
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
 /* --- ボタン・フォーム --- */
 
 .btn {
-  padding: 0.4rem 0.75rem;
-  background: var(--bg-raised);
-  color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  padding: 0.3rem 0.4rem;
+  background: none;
+  color: var(--accent);
+  border: none;
   font-size: 0.9rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
@@ -143,25 +139,22 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent-strong);
-  border-color: var(--accent-strong);
-  color: var(--on-accent-strong);
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .btn-ok {
-  border-color: var(--ok);
+  color: var(--ok);
 }
 
 .btn-danger {
-  border-color: var(--danger);
   color: var(--danger);
 }
 
 .btn-ghost {
-  border: none;
-  background: transparent;
+  text-decoration: none;
   color: var(--fg-muted);
-  padding: 0.2rem 0.5rem;
+  padding: 0.2rem 0.45rem;
 }
 
 .btn-ghost:hover {
@@ -174,11 +167,12 @@ input[type="time"],
 input[type="password"],
 select,
 textarea {
-  padding: 0.45rem 0.6rem;
-  background: var(--bg-raised);
+  padding: 0.35rem 0.45rem;
+  background: var(--bg-alt);
   color: var(--fg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: none;
+  border-bottom: 1.5px solid var(--border);
+  border-radius: 4px 4px 0 0;
   font-size: 1rem;
   font-family: inherit;
 }
@@ -203,27 +197,27 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
 }
 
 .item-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.35rem 0.6rem;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border);
-}
-
-.item-list > .item-row:last-child {
-  border-bottom: none;
+  padding: 0.3rem 0.3rem;
+  background: none;
+  border-bottom: 1px solid var(--hairline);
 }
 
 /* 斜視 (左右視差) の段ずれ対策: 縞で行の水平アンカーを明確にする */
 .item-list > .item-row:nth-child(even) {
   background: var(--bg-alt);
+}
+
+/* わかりやすい配置: 状態ラベルは固定幅の列にして題名の頭を揃える */
+.status-chip {
+  display: inline-block;
+  width: 3.8em;
+  flex-shrink: 0;
 }
 
 .item-closed .item-title {
@@ -242,10 +236,8 @@ textarea {
 }
 
 .status-chip {
-  font-size: 0.7rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 700;
   color: var(--fg-muted);
   white-space: nowrap;
 }
@@ -273,19 +265,18 @@ textarea {
 }
 
 .chip {
-  padding: 0.25rem 0.7rem;
-  background: transparent;
+  padding: 0.15rem 0.3rem;
+  background: none;
   color: var(--fg-muted);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.8rem;
+  border: none;
+  font-size: 0.85rem;
   cursor: pointer;
 }
 
 .chip-on {
   color: var(--fg);
-  border-color: var(--accent);
-  background: var(--bg-raised);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 /* --- トリアージ --- */
@@ -297,13 +288,11 @@ textarea {
 }
 
 .triage-card {
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.6rem;
+  padding: 0.2rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+  border-bottom: 1px solid var(--hairline);
 }
 
 .triage-title {
@@ -347,8 +336,8 @@ textarea {
 .settings h2 {
   font-size: 1rem;
   margin: 0.7rem 0 0.15rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--hairline);
+  padding-bottom: 0.1rem;
 }
 
 .settings .field {
