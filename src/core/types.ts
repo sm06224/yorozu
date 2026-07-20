@@ -39,6 +39,20 @@ export const ItemSchema = z.object({
   ai_allowed: z.boolean(),
   /** 見積もり作業時間 (分)。AI提案 or 手動 */
   estimate_minutes: z.int().positive().nullable().default(null),
+  /**
+   * 添付ファイル参照 (#25)。blob 本体は journal に入れず、
+   * ローカルは IndexedDB、リモートは同期先の att-{file_id} に置く
+   */
+  attachments: z
+    .array(
+      z.object({
+        file_id: z.string().min(1),
+        name: z.string().min(1).max(255),
+        size: z.int().nonnegative(),
+        mime: z.string().max(100),
+      }),
+    )
+    .default([]),
   created_at: LocalDateTimeSchema,
   // LWW の勝敗キー (設計書 §3)
   updated_at: LocalDateTimeSchema,
@@ -46,6 +60,7 @@ export const ItemSchema = z.object({
   done_at: LocalDateTimeSchema.nullable(),
 });
 export type Item = z.infer<typeof ItemSchema>;
+export type AttachmentRef = Item["attachments"][number];
 
 export const RULE_KINDS = ["deadline", "reask", "window", "brief"] as const;
 export const RuleKindSchema = z.enum(RULE_KINDS);

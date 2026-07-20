@@ -13,7 +13,8 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
-  "img-src 'self' data:",
+  // blob: は添付画像のローカル object URL 表示用 (#25)。外部読み込みは増えない
+  "img-src 'self' data: blob:",
   "font-src 'self'",
   "connect-src 'self' https://api.anthropic.com https://graph.microsoft.com https://login.microsoftonline.com",
   "worker-src 'self'",

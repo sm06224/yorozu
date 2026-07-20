@@ -16,7 +16,8 @@ interface KvRow {
 
 interface FileRow {
   name: string;
-  blob: Blob;
+  bytes: ArrayBuffer;
+  type: string;
 }
 
 class RemoteDB extends Dexie {
@@ -85,6 +86,15 @@ export class IdbStorageProvider implements StorageProvider {
   }
 
   async putFile(name: string, data: Blob): Promise<void> {
-    await this.db.files.put({ name, blob: data });
+    await this.db.files.put({
+      name,
+      bytes: await data.arrayBuffer(),
+      type: data.type,
+    });
+  }
+
+  async getFile(name: string): Promise<Blob | null> {
+    const row = await this.db.files.get(name);
+    return row ? new Blob([row.bytes], { type: row.type }) : null;
   }
 }

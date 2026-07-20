@@ -106,4 +106,16 @@ export class OneDriveStorageProvider implements StorageProvider {
         `OneDrive 書込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
       );
   }
+
+  async getFile(name: string): Promise<Blob | null> {
+    const res = await fetch(`${BASE}:/${name}:/content`, {
+      headers: { Authorization: `Bearer ${await getToken()}` },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok)
+      throw new Error(
+        `OneDrive 読込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
+      );
+    return res.blob();
+  }
 }

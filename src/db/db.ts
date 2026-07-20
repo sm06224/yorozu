@@ -15,6 +15,13 @@ export interface OutboxRow {
   entry: JournalEntry;
 }
 
+// Blob そのものではなくバイト列で持つ (iOS Safari の IndexedDB Blob 問題を避ける)
+export interface BlobRow {
+  file_id: string;
+  bytes: ArrayBuffer;
+  type: string;
+}
+
 export class YorozuDB extends Dexie {
   items!: EntityTable<Item, "id">;
   rules!: EntityTable<SurfaceRule, "id">;
@@ -22,6 +29,8 @@ export class YorozuDB extends Dexie {
   meta!: EntityTable<MetaRow, "key">;
   /** 未プッシュの journal エントリ (書き込みと同一トランザクションで積む) */
   outbox!: EntityTable<OutboxRow, "seq">;
+  /** 添付 blob のローカルキャッシュ (#25)。journal には参照だけ流す */
+  blobs!: EntityTable<BlobRow, "file_id">;
 
   constructor(name = "yorozu") {
     super(name);
@@ -34,6 +43,13 @@ export class YorozuDB extends Dexie {
       rules: "id, item_id, kind",
       meta: "key",
       outbox: "++seq",
+    });
+    this.version(3).stores({
+      items: "id, status, updated_at",
+      rules: "id, item_id, kind",
+      meta: "key",
+      outbox: "++seq",
+      blobs: "file_id",
     });
   }
 }
