@@ -6,6 +6,7 @@ import {
   DEFAULT_REMIND_HOUR,
   dateOf,
   type Occurrence,
+  remainingLabel,
   wallClockNow,
 } from "../core";
 import { db } from "../db/db";
@@ -17,11 +18,23 @@ import { msLikelySignedIn } from "../pim/msal";
 // 将来 PimProvider がこの同じ Occurrence 列を Outlook/To Do へ冪等 upsert する。
 
 const KIND_LABELS: Record<Occurrence["kind"], string> = {
-  deadline: "⏰締切",
-  reask: "🔁再確認",
-  window: "📅期間",
-  brief: "📌ピン",
+  deadline: "⏰",
+  reask: "🔁",
+  window: "📅",
+  brief: "📌",
 };
+
+function deltaClass(now: string, at: string): string {
+  if (at < now) return "kind-deadline";
+  return remainingLabel(now, at).endsWith("D") ? "delta-d" : "delta-h";
+}
+
+function stripPrefix(label: string): string {
+  return label.replace(
+    /^(締切まで\d+日|締切|まだ要る\?|開始|明日終了|ブリーフ): /,
+    "",
+  );
+}
 
 export function BriefView() {
   const [pimStatus, setPimStatus] = useState("");
@@ -81,28 +94,27 @@ export function BriefView() {
 
   return (
     <section className="brief">
-      <div className="brief-header">
-        <p className="hint">今日から {horizon.days} 日分の発火予定</p>
-        <span className="brief-actions">
-          {msLikelySignedIn() && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={occurrences.length === 0 || pimBusy}
-              onClick={() => void writeToOutlook()}
-            >
-              Outlookへ書き込む
-            </button>
-          )}
+      <p className="hint">今日から {horizon.days} 日分の発火予定</p>
+      <div className="brief-actions">
+        <span className="brief-actions-label">予定表へ:</span>
+        {msLikelySignedIn() && (
           <button
             type="button"
-            className="btn"
-            disabled={occurrences.length === 0}
-            onClick={downloadIcs}
+            className="btn btn-primary"
+            disabled={occurrences.length === 0 || pimBusy}
+            onClick={() => void writeToOutlook()}
           >
-            ICS書き出し
+            📆 Outlookへ書き込む
           </button>
-        </span>
+        )}
+        <button
+          type="button"
+          className="btn"
+          disabled={occurrences.length === 0}
+          onClick={downloadIcs}
+        >
+          📤 予定表に送る (ICS)
+        </button>
       </div>
       {pimStatus && <p className="sync-status">{pimStatus}</p>}
       {occurrences.length === 0 && (
@@ -116,10 +128,13 @@ export function BriefView() {
           <ul className="item-list">
             {list.map((o) => (
               <li key={o.key} className="item-row">
-                <span className={`status-chip kind-${o.kind}`}>
+                <span className={`kind-mark kind-${o.kind}`}>
                   {KIND_LABELS[o.kind]}
                 </span>
-                <span className="item-title">{o.label}</span>
+                <span className={`brief-delta ${deltaClass(now, o.at)}`}>
+                  {remainingLabel(now, o.at)}
+                </span>
+                <span className="item-title">{stripPrefix(o.label)}</span>
                 <span className="brief-time">{o.at.slice(11)}</span>
               </li>
             ))}

@@ -37,6 +37,8 @@ export const ItemSchema = z.object({
   tags: z.array(z.string().min(1)),
   // false = このアイテムを AI に送らない (v0.1 §7)
   ai_allowed: z.boolean(),
+  /** 見積もり作業時間 (分)。AI提案 or 手動 */
+  estimate_minutes: z.int().positive().nullable().default(null),
   created_at: LocalDateTimeSchema,
   // LWW の勝敗キー (設計書 §3)
   updated_at: LocalDateTimeSchema,
@@ -62,6 +64,8 @@ export const DeadlineRuleSchema = z.object({
   ...ruleBase,
   kind: z.literal("deadline"),
   due: LocalDateTimeSchema,
+  /** 最初に設定した期限。期日を動かしても保持し、先送り判断の基準にする */
+  original_due: LocalDateTimeSchema.nullable().default(null),
   lead_days: z.array(z.int().nonnegative()).min(1),
 });
 

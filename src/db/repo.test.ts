@@ -45,6 +45,23 @@ describe("repo", () => {
     );
   });
 
+  test("期日を動かしても当初期限 (original_due) を保持する", async () => {
+    const item = await captureItem("x");
+    await applyTriage(item.id, {
+      status: "active",
+      due: { date: "2026-08-01" },
+    });
+    await applyTriage(item.id, {
+      status: "active",
+      due: { date: "2026-08-10" },
+    });
+    const rule = (await db.rules.where("item_id").equals(item.id).toArray())[0];
+    expect(rule?.kind === "deadline" && rule.due).toBe("2026-08-10T09:00");
+    expect(rule?.kind === "deadline" && rule.original_due).toBe(
+      "2026-08-01T09:00",
+    );
+  });
+
   test("applyTriage の再実行は既存ルールを置き換える", async () => {
     const item = await captureItem("x");
     await applyTriage(item.id, {

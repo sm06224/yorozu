@@ -23,6 +23,7 @@ export interface TriageDecision {
   /** 再確認間隔 (日)。someday/waiting 向け */
   reask_days?: number;
   ai_allowed?: boolean;
+  estimate_minutes?: number | null;
 }
 
 export function makeRepo(db: YorozuDB) {
@@ -92,12 +93,20 @@ export function makeRepo(db: YorozuDB) {
         triaged_at: t,
         updated_at: t,
         ...(d.ai_allowed === undefined ? {} : { ai_allowed: d.ai_allowed }),
+        ...(d.estimate_minutes === undefined
+          ? {}
+          : { estimate_minutes: d.estimate_minutes }),
         ...(d.status === "done" ? { done_at: t } : {}),
       });
       const saved = await db.items.get(itemId);
       if (saved) await db.outbox.add({ entry: outboxUpsertItem(saved) });
 
       const old = await db.rules.where("item_id").equals(itemId).toArray();
+      const oldDeadline = old.find((r) => r.kind === "deadline");
+      const originalDue =
+        oldDeadline?.kind === "deadline"
+          ? (oldDeadline.original_due ?? oldDeadline.due)
+          : null;
       for (const r of old) {
         await db.outbox.add({
           entry: { op: "delete_rule", device, id: r.id, ts: t },
@@ -113,6 +122,7 @@ export function makeRepo(db: YorozuDB) {
             item_id: itemId,
             kind: "deadline",
             due: `${d.due.date}T${d.due.time ?? "09:00"}`,
+            original_due: originalDue,
             lead_days: d.due.lead_days ?? [7, 1, 0],
             enabled: true,
             created_at: t,

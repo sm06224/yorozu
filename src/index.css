@@ -122,24 +122,21 @@ body {
 
 /* --- ボタン・フォーム --- */
 
+/* ボタンは入力欄と同じ「明確な箱」様式: 押せるものは箱に見える */
 .btn {
-  padding: 0.25rem 0.15rem;
-  background: none;
+  padding: 0.3rem 0.6rem;
+  background: var(--bg-raised);
   color: var(--accent);
-  border: none;
-  font-size: 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
 }
 
-.btn::before {
-  content: "[";
-  opacity: 0.65;
-}
-
-.btn::after {
-  content: "]";
-  opacity: 0.65;
+.btn:active {
+  filter: brightness(0.9);
 }
 
 .btn:disabled {
@@ -148,7 +145,9 @@ body {
 }
 
 .btn-primary {
-  color: var(--accent);
+  background: var(--accent-strong);
+  color: var(--on-accent-strong);
+  border-color: var(--accent-strong);
   font-weight: 700;
 }
 
@@ -160,15 +159,14 @@ body {
   color: var(--danger);
 }
 
+/* 行内の小操作 (✓ ↩) は箱にしない: 行の密度を守る */
 .btn-ghost {
+  background: none;
+  border: none;
+  border-radius: 0;
   color: var(--fg-muted);
   padding: 0.2rem 0.45rem;
   font-weight: 400;
-}
-
-.btn-ghost::before,
-.btn-ghost::after {
-  content: none;
 }
 
 .btn-ghost:hover {
@@ -387,18 +385,30 @@ textarea {
 
 /* --- ブリーフ --- */
 
-.brief-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
 .brief-date {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--fg-muted);
   margin: 0.5rem 0 0.15rem;
+}
+
+.kind-mark {
+  flex-shrink: 0;
+}
+
+.brief-delta {
+  flex-shrink: 0;
+  width: 3.6em;
+  font-weight: 700;
+}
+
+/* 猶予の単位を色で区別: 日(D)=通常文字色 / 時間(H)=accent / 超過=danger */
+.delta-d {
+  color: var(--fg);
+}
+
+.delta-h {
+  color: var(--accent);
 }
 
 .brief-time {
@@ -411,7 +421,22 @@ textarea {
   color: var(--danger);
 }
 
+/* 予定表への書き出し導線: 独立した1行にして見落とさせない */
 .brief-actions {
   display: flex;
-  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg-alt);
+}
+
+.brief-actions .btn {
+  font-size: 1rem;
+}
+
+.brief-actions-label {
+  font-weight: 700;
 }
