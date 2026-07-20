@@ -1,0 +1,66 @@
+/// <reference types="vitest/config" />
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
+
+// GitHub Pages はサブパス配信 (https://<user>.github.io/yorozu/) のため、
+// CI から BASE_PATH=/yorozu/ を注入する。ローカルは "/"。
+const base = process.env.BASE_PATH ?? "/";
+
+// 設計書 §5/§9: 厳格CSP・外部スクリプト0がリリース条件。
+// dev では HMR がインラインスクリプトを使うため本番ビルドのみに注入する。
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  "connect-src 'self' https://api.anthropic.com https://graph.microsoft.com https://login.microsoftonline.com",
+  "worker-src 'self'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "object-src 'none'",
+  "frame-ancestors 'none'",
+].join("; ");
+
+export default defineConfig(({ command }) => ({
+  base,
+  plugins: [
+    react(),
+    {
+      name: "inject-csp",
+      transformIndexHtml(html: string) {
+        if (command !== "build") return html;
+        return html.replace(
+          "<meta charset",
+          `<meta http-equiv="Content-Security-Policy" content="${CSP}" />\n    <meta charset`,
+        );
+      },
+    },
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "script-defer",
+      includeAssets: ["icon.svg"],
+      manifest: {
+        name: "YOROZU",
+        short_name: "YOROZU",
+        description: "単人・ゼロランニングコストのPIM",
+        theme_color: "#1a1a2e",
+        background_color: "#1a1a2e",
+        display: "standalone",
+        icons: [
+          {
+            src: "icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any",
+          },
+        ],
+      },
+    }),
+  ],
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
+  },
+}));
