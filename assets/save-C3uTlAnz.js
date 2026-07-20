@@ -1,0 +1,1 @@
+import{t as e}from"./db-Cr0IdK4o.js";import{t}from"./config-TpdH-0LE.js";function n(e,t){let n=URL.createObjectURL(t),r=document.createElement(`a`);r.href=n,r.download=e,r.click(),URL.revokeObjectURL(n)}async function r(n,r){let i=await t(e,!1);return i?.putFile?(await i.putFile(n,r),!0):!1}export{n as downloadBlob,r as saveCopyToRemote};
