@@ -1,4 +1,5 @@
 import { getMeta, setMeta, type YorozuDB } from "../db/db";
+import { getDeviceId } from "./device";
 import {
   type JournalEntry,
   parseEntry,
@@ -109,6 +110,8 @@ export async function syncOnce(
     }
   }
 
+  const bootstrapped = cursor > 0;
+
   // pull: カーソル以降の journal を取り込む
   const lines = await provider.readJournal(cursor);
   pulled = lines.length;
@@ -121,6 +124,31 @@ export async function syncOnce(
   // push: outbox を追記
   const outbox = await db.outbox.orderBy("seq").toArray();
   let pushed = 0;
+
+  // 空のリモートへの初回同期で outbox も空なら (他プロバイダで消費済み)、
+  // ローカル全量を種まきする (別リモートへの乗り換え・バックアップ先追加を成立させる)
+  if (
+    !bootstrapped &&
+    cursor === 0 &&
+    lines.length === 0 &&
+    outbox.length === 0
+  ) {
+    const device = getDeviceId();
+    const seed: JournalEntry[] = [
+      ...(await db.items.toArray()).map(
+        (payload) => ({ op: "upsert_item", device, payload }) as const,
+      ),
+      ...(await db.rules.toArray()).map(
+        (payload) => ({ op: "upsert_rule", device, payload }) as const,
+      ),
+    ];
+    if (seed.length > 0) {
+      const newLen = await provider.appendJournal(seed.map(serializeEntry));
+      pushed += seed.length;
+      if (newLen === seed.length) cursor = newLen;
+    }
+  }
+
   if (outbox.length > 0) {
     const newLen = await provider.appendJournal(
       outbox.map((o) => serializeEntry(o.entry)),
@@ -129,7 +157,7 @@ export async function syncOnce(
     if (maxSeq !== undefined) {
       await db.outbox.where("seq").belowOrEqual(maxSeq).delete();
     }
-    pushed = outbox.length;
+    pushed += outbox.length;
     // 追記中に他端末の書き込みが挟まらなければ自分の行は読み戻さなくてよい。
     // 挟まった場合はカーソルを進めず、次回 pull で LWW が no-op として吸収する。
     if (newLen === cursor + outbox.length) cursor = newLen;

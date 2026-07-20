@@ -102,6 +102,23 @@ describe("syncOnce", () => {
     expect(await a.outbox.count()).toBe(0);
   });
 
+  test("outbox消費済みでも空リモートへの初回同期で全量を種まきする", async () => {
+    const repoA = makeRepo(a);
+    await repoA.captureItem("既存アイテム", at(0));
+    await syncOnce(a, remote); // outbox はここで消費される
+
+    // 別のリモート (乗り換え/追加) に同期しても全量が上がる
+    const remote2 = new IdbStorageProvider(`test-remote2-${n}`);
+    Object.defineProperty(remote2, "kind", { value: "idb2" }); // カーソルを別キーに
+    const r = await syncOnce(a, remote2);
+    expect(r.pushed).toBe(1);
+    expect(await remote2.journalLength()).toBe(1);
+
+    const rb = await syncOnce(b, remote2);
+    expect(rb.applied).toBe(1);
+    expect(await b.items.count()).toBe(1);
+  });
+
   test("新規端末は snapshot からブートストラップできる", async () => {
     const repoA = makeRepo(a);
     for (let i = 0; i < 5; i += 1) {
