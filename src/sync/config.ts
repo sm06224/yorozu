@@ -3,7 +3,7 @@ import { ensurePermission, FsaStorageProvider } from "./fsa";
 import { IdbStorageProvider } from "./idb";
 import type { StorageProvider } from "./provider";
 
-export type SyncKind = "none" | "idb" | "fsa";
+export type SyncKind = "none" | "idb" | "fsa" | "onedrive";
 
 const KIND_KEY = "sync.kind";
 const FSA_HANDLE_KEY = "sync.fsa_handle";
@@ -35,6 +35,12 @@ export async function getConfiguredProvider(
 ): Promise<StorageProvider | null> {
   const kind = await getSyncKind(db);
   if (kind === "idb") return new IdbStorageProvider();
+  if (kind === "onedrive") {
+    const { OneDriveStorageProvider } = await import("./onedrive");
+    const { msAccount } = await import("../pim/msal");
+    if (!(await msAccount())) return null; // 未サインインなら静かに諦める
+    return new OneDriveStorageProvider();
+  }
   if (kind === "fsa") {
     const handle = await getMeta<FileSystemDirectoryHandle>(db, FSA_HANDLE_KEY);
     if (!handle) return null;
