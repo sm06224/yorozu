@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { getApiKey, KEY_CONSENT_TEXT, setApiKey } from "../ai/key";
+import { wallClockNow } from "../core";
 import { db } from "../db/db";
+import { buildTestEvent, createCalendarEvent } from "../pim/graph";
+import {
+  msAccessToken,
+  msAccount,
+  msLikelySignedIn,
+  msSignIn,
+  msSignOut,
+} from "../pim/msal";
 import {
   getConfiguredProvider,
   getSyncKind,
@@ -24,9 +33,40 @@ export function SettingsView() {
     setKeyStatus(keyInput.trim() ? "キーを保存しました" : "キーを削除しました");
   }
 
+  const [msUser, setMsUser] = useState<string | null>(null);
+  const [msStatus, setMsStatus] = useState("");
+  const [msBusy, setMsBusy] = useState(false);
+
   useEffect(() => {
     void getSyncKind(db).then(setKind);
+    if (msLikelySignedIn()) {
+      void msAccount().then((a) => setMsUser(a?.username ?? null));
+    }
   }, []);
+
+  async function msTestWrite() {
+    setMsBusy(true);
+    setMsStatus("Graph へ書き込み中…");
+    try {
+      const token = await msAccessToken();
+      if (!token) {
+        setMsStatus("トークン取得のため再認証にリダイレクトします…");
+        return;
+      }
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const r = await createCalendarEvent(
+        token,
+        buildTestEvent(wallClockNow(), tz),
+      );
+      setMsStatus(
+        `✅ 書き込み成功 (event id: ${r.id.slice(0, 12)}…)。Outlook の明日9:00を確認してください`,
+      );
+    } catch (e) {
+      setMsStatus(`❌ 失敗: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setMsBusy(false);
+    }
+  }
 
   async function changeKind(next: SyncKind) {
     setKind(next);
@@ -131,6 +171,46 @@ export function SettingsView() {
         </button>
       </div>
       {keyStatus && <p className="sync-status">{keyStatus}</p>}
+
+      <h2>Microsoft 連携 (Spike)</h2>
+      <p className="hint">
+        OAuth (PKCE) で個人 Microsoft アカウントにサインインし、Outlook
+        カレンダーへテストイベントを1件書き込みます (Issue #15)。
+        サインイン状態は再起動後も維持されます。
+      </p>
+      {msUser ? (
+        <>
+          <p className="hint">サインイン中: {msUser}</p>
+          <div className="field field-inline">
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={msBusy}
+              onClick={() => void msTestWrite()}
+            >
+              テストイベントを書き込む
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void msSignOut()}
+            >
+              サインアウト
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="field">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => void msSignIn()}
+          >
+            Microsoft にサインイン
+          </button>
+        </div>
+      )}
+      {msStatus && <p className="sync-status">{msStatus}</p>}
     </section>
   );
 }
