@@ -8,6 +8,8 @@
 - `pnpm check` — typecheck + lint + test (コミット前に必ず通す)
 - `pnpm lint:fix` — Biome 自動整形
 - `pnpm build` — 本番ビルド (CSP メタ注入込み)
+- `pnpm e2e` — Playwright スモークテスト (要: 事前 `pnpm build`。
+  Claude Code リモート環境では `CHROMIUM_PATH=/opt/pw-browsers/chromium pnpm e2e`)
 
 ## アーキテクチャ原則 (設計書 v0.3 より)
 
