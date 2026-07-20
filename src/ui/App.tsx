@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { db } from "../db/db";
 import { getConfiguredProvider } from "../sync/config";
 import { syncOnce } from "../sync/engine";
+import { BriefView } from "./BriefView";
 import { InboxView } from "./InboxView";
 import { ListView } from "./ListView";
 import { SettingsView } from "./SettingsView";
 import { TriageView } from "./TriageView";
 
 const TABS = [
+  { key: "brief", label: "予定" },
   { key: "inbox", label: "受信箱" },
   { key: "triage", label: "トリアージ" },
   { key: "list", label: "一覧" },
@@ -55,6 +57,7 @@ export function App() {
         ))}
       </nav>
       <main className="app-main">
+        {tab === "brief" && <BriefView />}
         {tab === "inbox" && <InboxView />}
         {tab === "triage" && <TriageView />}
         {tab === "list" && <ListView />}
