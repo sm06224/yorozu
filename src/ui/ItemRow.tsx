@@ -19,6 +19,8 @@ export function statusLabel(s: ItemStatus): string {
 export function ItemRow({ item }: { item: Item }) {
   const closed = item.status === "done" || item.status === "archived";
   const [showAtt, setShowAtt] = useState(false);
+  // v4移行前のレコードが紛れても白画面にしない防御 (移行本体は db.ts の upgrade)
+  const attCount = item.attachments?.length ?? 0;
   return (
     <>
       <li className={`item-row ${closed ? "item-closed" : ""}`}>
@@ -33,7 +35,7 @@ export function ItemRow({ item }: { item: Item }) {
             title="添付ファイル"
             onClick={() => setShowAtt((v) => !v)}
           >
-            📎{item.attachments.length > 0 ? item.attachments.length : ""}
+            📎{attCount > 0 ? attCount : ""}
           </button>
           {!closed && (
             <button

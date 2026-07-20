@@ -43,7 +43,7 @@ export function AttachmentStrip({ item }: { item: Item }) {
 
   return (
     <li className="attachment-strip">
-      {item.attachments.map((a) => (
+      {(item.attachments ?? []).map((a) => (
         <span key={a.file_id} className="attachment-entry">
           <button
             type="button"
