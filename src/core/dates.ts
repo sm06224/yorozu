@@ -23,6 +23,16 @@ export function toLocalDateTime(d: Date): LocalDateTime {
   return `${toLocalDate(d)}T${hh}:${mm}`;
 }
 
+/** 実行環境の壁時計から「今」のローカル表記を得る (アプリ境界でのみ使う) */
+export function wallClockNow(d: Date = new Date()): LocalDateTime {
+  const y = d.getFullYear().toString().padStart(4, "0");
+  const m = (d.getMonth() + 1).toString().padStart(2, "0");
+  const day = d.getDate().toString().padStart(2, "0");
+  const hh = d.getHours().toString().padStart(2, "0");
+  const mm = d.getMinutes().toString().padStart(2, "0");
+  return `${y}-${m}-${day}T${hh}:${mm}`;
+}
+
 export function addDays(d: LocalDate, days: number): LocalDate {
   const date = toDate(d);
   date.setUTCDate(date.getUTCDate() + days);
