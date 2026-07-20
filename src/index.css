@@ -411,6 +411,14 @@ textarea {
   color: var(--accent);
 }
 
+.error-boundary {
+  padding: 1rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
 /* 添付ストリップ: 行の直下に1行。行と同じ密度で、面はraisedに寄せる */
 .attachment-strip {
   display: flex;

@@ -101,7 +101,12 @@ export function SettingsView() {
         `同期完了: 取込 ${r.pulled} 行 / 適用 ${r.applied} 件 / 送信 ${r.pushed} 件`,
       );
     } catch (e) {
-      setStatus(`同期エラー: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      // Safari は fetch のネットワーク失敗を "Load failed" とだけ言う
+      const hint = /load failed|failed to fetch/i.test(msg)
+        ? " (ネットワーク不達。電波状況と Microsoft サインイン状態を確認して、もう一度お試しください)"
+        : "";
+      setStatus(`同期エラー: ${msg}${hint}`);
     } finally {
       setBusy(false);
     }

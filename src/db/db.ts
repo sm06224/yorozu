@@ -51,6 +51,18 @@ export class YorozuDB extends Dexie {
       outbox: "++seq",
       blobs: "file_id",
     });
+    // 後から足した列を既存レコードに補う (これを怠ると UI が undefined 参照で白画面になる)
+    this.version(4)
+      .stores({})
+      .upgrade(async (tx) => {
+        await tx
+          .table("items")
+          .toCollection()
+          .modify((i: Record<string, unknown>) => {
+            i.attachments ??= [];
+            i.estimate_minutes ??= null;
+          });
+      });
   }
 }
 

@@ -52,7 +52,7 @@ export function makeAttachments(
     });
     await repo.updateItem(
       itemId,
-      { attachments: [...item.attachments, ref] },
+      { attachments: [...(item.attachments ?? []), ref] },
       now,
     );
     await setPending([...(await pending()), ref.file_id]);
@@ -87,7 +87,11 @@ export function makeAttachments(
     if (!item) return;
     await repo.updateItem(
       itemId,
-      { attachments: item.attachments.filter((a) => a.file_id !== fileId) },
+      {
+        attachments: (item.attachments ?? []).filter(
+          (a) => a.file_id !== fileId,
+        ),
+      },
       now,
     );
     await db.blobs.delete(fileId);
