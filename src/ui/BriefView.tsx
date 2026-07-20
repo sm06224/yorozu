@@ -94,28 +94,27 @@ export function BriefView() {
 
   return (
     <section className="brief">
-      <div className="brief-header">
-        <p className="hint">今日から {horizon.days} 日分の発火予定</p>
-        <span className="brief-actions">
-          {msLikelySignedIn() && (
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={occurrences.length === 0 || pimBusy}
-              onClick={() => void writeToOutlook()}
-            >
-              Outlookへ書き込む
-            </button>
-          )}
+      <p className="hint">今日から {horizon.days} 日分の発火予定</p>
+      <div className="brief-actions">
+        <span className="brief-actions-label">予定表へ:</span>
+        {msLikelySignedIn() && (
           <button
             type="button"
-            className="btn"
-            disabled={occurrences.length === 0}
-            onClick={downloadIcs}
+            className="btn btn-primary"
+            disabled={occurrences.length === 0 || pimBusy}
+            onClick={() => void writeToOutlook()}
           >
-            ICS書き出し
+            📆 Outlookへ書き込む
           </button>
-        </span>
+        )}
+        <button
+          type="button"
+          className="btn"
+          disabled={occurrences.length === 0}
+          onClick={downloadIcs}
+        >
+          📤 予定表に送る (ICS)
+        </button>
       </div>
       {pimStatus && <p className="sync-status">{pimStatus}</p>}
       {occurrences.length === 0 && (
