@@ -21,14 +21,20 @@
 
 設計書: [docs/design/](docs/design/)
 
+## 公開版
+
+main へのマージで GitHub Pages に自動デプロイされます:
+**https://sm06224.github.io/yorozu/**
+
 ## 開発
 
 ```sh
 pnpm install
 pnpm dev        # 開発サーバ
 pnpm test       # Vitest
-pnpm check      # typecheck + lint
-pnpm build      # 本番ビルド
+pnpm check      # typecheck + lint + test
+pnpm build      # 本番ビルド (厳格CSPメタ注入込み)
+pnpm e2e        # Playwright スモークテスト (要: pnpm build)
 ```
 
 ## License
