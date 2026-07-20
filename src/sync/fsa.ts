@@ -1,4 +1,9 @@
 import type { StorageProvider } from "./provider";
+import {
+  type ParsedJournal,
+  parseJournalText,
+  serializeJournalText,
+} from "./textjournal";
 
 // File System Access API アダプタ。ユーザーが選んだフォルダ (例: iCloud/OneDrive の
 // ローカル同期フォルダ) に journal/snapshot を置く。ブラウザ対応は Chromium 系のみ。
@@ -71,13 +76,12 @@ export class FsaStorageProvider implements StorageProvider {
     }
   }
 
-  private async readJournalLines(): Promise<string[]> {
-    const text = await this.readFile(JOURNAL);
-    if (!text) return [];
-    return text.split("\n").filter((l) => l.trim() !== "");
+  private async journal(): Promise<ParsedJournal> {
+    return parseJournalText(await this.readFile(JOURNAL));
   }
 
   async appendJournal(lines: string[]): Promise<number> {
+    // 末尾 seek 追記。base ヘッダ行はファイル先頭のまま保たれる
     const handle = await this.dir.getFileHandle(JOURNAL, { create: true });
     const file = await handle.getFile();
     const writable = await handle.createWritable({ keepExistingData: true });
@@ -86,15 +90,32 @@ export class FsaStorageProvider implements StorageProvider {
       file.size > 0 && !(await file.text()).endsWith("\n") ? "\n" : "";
     await writable.write(`${prefix}${lines.join("\n")}\n`);
     await writable.close();
-    return (await this.readJournalLines()).length;
+    const j = await this.journal();
+    return j.base + j.lines.length;
   }
 
   async readJournal(fromLine: number): Promise<string[]> {
-    return (await this.readJournalLines()).slice(fromLine);
+    const j = await this.journal();
+    return j.lines.slice(Math.max(0, fromLine - j.base));
   }
 
   async journalLength(): Promise<number> {
-    return (await this.readJournalLines()).length;
+    const j = await this.journal();
+    return j.base + j.lines.length;
+  }
+
+  async journalBase(): Promise<number> {
+    return (await this.journal()).base;
+  }
+
+  async compactJournal(upToLine: number): Promise<void> {
+    const j = await this.journal();
+    if (upToLine <= j.base) return;
+    const keep = j.lines.slice(upToLine - j.base);
+    const handle = await this.dir.getFileHandle(JOURNAL, { create: true });
+    const writable = await handle.createWritable();
+    await writable.write(serializeJournalText(upToLine, keep));
+    await writable.close();
   }
 
   async writeSnapshot(json: string): Promise<void> {

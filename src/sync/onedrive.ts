@@ -1,5 +1,10 @@
 import { msAccessToken } from "../pim/msal";
 import type { StorageProvider } from "./provider";
+import {
+  type ParsedJournal,
+  parseJournalText,
+  serializeJournalText,
+} from "./textjournal";
 
 // OneDrive approot アダプタ (設計書 §1, §3, #16)。
 // app 専用フォルダ (Files.ReadWrite.AppFolder) に journal.jsonl / snapshot.json を置く。
@@ -47,24 +52,36 @@ export class OneDriveStorageProvider implements StorageProvider {
   readonly kind = "onedrive";
   readonly label = "OneDrive (approot)";
 
-  private async lines(): Promise<string[]> {
-    const text = await readText("journal.jsonl");
-    return text ? text.split("\n").filter((l) => l.trim() !== "") : [];
+  private async journal(): Promise<ParsedJournal> {
+    return parseJournalText(await readText("journal.jsonl"));
   }
 
   async appendJournal(newLines: string[]): Promise<number> {
-    const cur = await this.lines();
-    const all = [...cur, ...newLines];
-    await writeText("journal.jsonl", `${all.join("\n")}\n`);
-    return all.length;
+    const j = await this.journal();
+    const all = [...j.lines, ...newLines];
+    await writeText("journal.jsonl", serializeJournalText(j.base, all));
+    return j.base + all.length;
   }
 
   async readJournal(fromLine: number): Promise<string[]> {
-    return (await this.lines()).slice(fromLine);
+    const j = await this.journal();
+    return j.lines.slice(Math.max(0, fromLine - j.base));
   }
 
   async journalLength(): Promise<number> {
-    return (await this.lines()).length;
+    const j = await this.journal();
+    return j.base + j.lines.length;
+  }
+
+  async journalBase(): Promise<number> {
+    return (await this.journal()).base;
+  }
+
+  async compactJournal(upToLine: number): Promise<void> {
+    const j = await this.journal();
+    if (upToLine <= j.base) return;
+    const keep = j.lines.slice(upToLine - j.base);
+    await writeText("journal.jsonl", serializeJournalText(upToLine, keep));
   }
 
   async writeSnapshot(json: string): Promise<void> {

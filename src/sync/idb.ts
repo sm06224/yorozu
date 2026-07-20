@@ -40,18 +40,39 @@ export class IdbStorageProvider implements StorageProvider {
     this.db = new RemoteDB(name);
   }
 
+  private async base(): Promise<number> {
+    const row = await this.db.kv.get("journal_base");
+    return row ? Number(row.value) : 0;
+  }
+
   async appendJournal(lines: string[]): Promise<number> {
     await this.db.lines.bulkAdd(lines.map((line) => ({ line })) as LineRow[]);
-    return this.db.lines.count();
+    return (await this.base()) + (await this.db.lines.count());
   }
 
   async readJournal(fromLine: number): Promise<string[]> {
-    const rows = await this.db.lines.orderBy("seq").offset(fromLine).toArray();
+    const local = Math.max(0, fromLine - (await this.base()));
+    const rows = await this.db.lines.orderBy("seq").offset(local).toArray();
     return rows.map((r) => r.line);
   }
 
   async journalLength(): Promise<number> {
-    return this.db.lines.count();
+    return (await this.base()) + (await this.db.lines.count());
+  }
+
+  async journalBase(): Promise<number> {
+    return this.base();
+  }
+
+  async compactJournal(upToLine: number): Promise<void> {
+    const base = await this.base();
+    if (upToLine <= base) return;
+    const drop = await this.db.lines
+      .orderBy("seq")
+      .limit(upToLine - base)
+      .primaryKeys();
+    await this.db.lines.bulkDelete(drop);
+    await this.db.kv.put({ key: "journal_base", value: String(upToLine) });
   }
 
   async writeSnapshot(json: string): Promise<void> {

@@ -134,3 +134,64 @@ describe("syncOnce", () => {
     expect(rc.pulled).toBe(0);
   });
 });
+
+describe("journal compaction (#25)", () => {
+  // snapshot(200行ごと) + compaction(末尾200行残し・200行以上削れる時) の
+  // しきい値を超えるだけの行数を作る
+  const MANY = 450;
+
+  async function fillMany(db: YorozuDB): Promise<void> {
+    const repo = makeRepo(db);
+    for (let i = 0; i < MANY; i += 1) {
+      await repo.captureItem(`item-${i}`, at(i % 50));
+    }
+  }
+
+  test("snapshot 後に journal が物理的に切り詰められ、行番号は保たれる", async () => {
+    await fillMany(a);
+    await syncOnce(a, remote);
+    expect(await remote.journalLength()).toBe(MANY); // グローバル行番号は不変
+    expect(await remote.journalBase()).toBeGreaterThanOrEqual(200);
+    // 物理行数は減っている
+    const physical = (await remote.readJournal(await remote.journalBase()))
+      .length;
+    expect(physical).toBeLessThan(MANY);
+  });
+
+  test("追従済み端末は compaction 後も普通に同期できる", async () => {
+    await fillMany(a);
+    await syncOnce(a, remote); // compaction 発生
+    const rb = await syncOnce(b, remote); // 新規端末: snapshot から
+    expect(await b.items.count()).toBe(MANY);
+
+    // 以降の増分も通常 pull で届く
+    await makeRepo(a).captureItem("追加分", at(55));
+    await syncOnce(a, remote);
+    const rb2 = await syncOnce(b, remote);
+    expect(rb2.pulled).toBe(1);
+    expect(await b.items.count()).toBe(MANY + 1);
+    expect(rb.pulled).toBe(0);
+  });
+
+  test("取り残された端末は snapshot から追いつく (削除も復活しない)", async () => {
+    const repoA = makeRepo(a);
+    const early = await repoA.captureItem("早い時期のアイテム", at(0));
+    const doomed = await repoA.captureItem("後で消すアイテム", at(1));
+    await syncOnce(a, remote);
+    await syncOnce(b, remote); // b はここで止まる (cursor=2)
+    expect(await b.items.count()).toBe(2);
+
+    // a 側で削除 + 大量追加 → compaction で b のカーソル範囲が消える
+    await repoA.deleteItem(doomed.id, at(2));
+    await fillMany(a);
+    await syncOnce(a, remote);
+    expect(await remote.journalBase()).toBeGreaterThan(2);
+
+    const rb = await syncOnce(b, remote);
+    expect(rb.applied).toBeGreaterThan(0);
+    expect(await b.items.get(early.id)).toBeDefined();
+    // トンボストーンが snapshot 経由で伝わり、削除が復活しない
+    expect(await b.items.get(doomed.id)).toBeUndefined();
+    expect(await b.items.count()).toBe(MANY + 1);
+  });
+});
