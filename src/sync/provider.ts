@@ -17,4 +17,6 @@ export interface StorageProvider {
   journalLength(): Promise<number>;
   writeSnapshot(json: string): Promise<void>;
   readSnapshot(): Promise<string | null>;
+  /** 書き出しファイル (ICS/xlsx 等) の控えを同じ場所に置く (§3、任意実装) */
+  putFile?(name: string, data: Blob): Promise<void>;
 }

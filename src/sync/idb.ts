@@ -14,13 +14,20 @@ interface KvRow {
   value: string;
 }
 
+interface FileRow {
+  name: string;
+  blob: Blob;
+}
+
 class RemoteDB extends Dexie {
   lines!: EntityTable<LineRow, "seq">;
   kv!: EntityTable<KvRow, "key">;
+  files!: EntityTable<FileRow, "name">;
 
   constructor(name: string) {
     super(name);
     this.version(1).stores({ lines: "++seq", kv: "key" });
+    this.version(2).stores({ lines: "++seq", kv: "key", files: "name" });
   }
 }
 
@@ -54,5 +61,9 @@ export class IdbStorageProvider implements StorageProvider {
   async readSnapshot(): Promise<string | null> {
     const row = await this.db.kv.get("snapshot");
     return row?.value ?? null;
+  }
+
+  async putFile(name: string, data: Blob): Promise<void> {
+    await this.db.files.put({ name, blob: data });
   }
 }
