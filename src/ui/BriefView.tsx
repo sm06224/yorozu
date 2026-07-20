@@ -69,10 +69,17 @@ export function BriefView() {
     setPimBusy(true);
     setPimStatus("Outlook へ書き込み中…");
     try {
-      const { OutlookPimProvider } = await import("../pim/outlook");
-      const r = await new OutlookPimProvider().upsertOccurrences(occurrences);
+      const [{ OutlookPimProvider }, { pimUpsert }] = await Promise.all([
+        import("../pim/outlook"),
+        import("../pim/sync"),
+      ]);
+      const r = await pimUpsert(new OutlookPimProvider(), occurrences, now);
+      const respected =
+        r.respected > 0
+          ? ` / PIM側で削除済み ${r.respected} 件は再作成せず`
+          : "";
       setPimStatus(
-        `✅ Outlook へ upsert: 新規 ${r.created} 件 / 既存スキップ ${r.skipped} 件`,
+        `✅ Outlook: 新規 ${r.created} 件 / 既存 ${r.skipped} 件${respected}`,
       );
     } catch (e) {
       setPimStatus(`❌ 失敗: ${e instanceof Error ? e.message : String(e)}`);
