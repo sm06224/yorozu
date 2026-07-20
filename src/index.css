@@ -291,3 +291,24 @@ textarea {
   gap: 0.5rem;
   margin-top: 0.3rem;
 }
+
+/* --- 設定 --- */
+
+.settings h2 {
+  font-size: 1.05rem;
+  margin: 1rem 0 0.3rem;
+}
+
+.settings .field {
+  margin: 0.8rem 0;
+}
+
+.hint {
+  color: var(--fg-muted);
+  font-size: 0.8rem;
+}
+
+.sync-status {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
