@@ -83,8 +83,7 @@ body {
 .placeholder,
 .empty {
   color: var(--fg-muted);
-  text-align: center;
-  padding: 0.8rem 0;
+  padding: 0.4rem 0;
 }
 
 /* --- ナビ --- */
@@ -123,14 +122,23 @@ body {
 /* --- ボタン・フォーム --- */
 
 .btn {
-  padding: 0.3rem 0.4rem;
+  padding: 0.25rem 0.15rem;
   background: none;
   color: var(--accent);
   border: none;
   font-size: 0.9rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.btn::before {
+  content: "[";
+  opacity: 0.65;
+}
+
+.btn::after {
+  content: "]";
+  opacity: 0.65;
 }
 
 .btn:disabled {
@@ -152,9 +160,14 @@ body {
 }
 
 .btn-ghost {
-  text-decoration: none;
   color: var(--fg-muted);
   padding: 0.2rem 0.45rem;
+  font-weight: 400;
+}
+
+.btn-ghost::before,
+.btn-ghost::after {
+  content: none;
 }
 
 .btn-ghost:hover {
@@ -303,15 +316,22 @@ textarea {
 
 .field {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.85rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
   color: var(--fg-muted);
+}
+
+.field > span {
+  flex-shrink: 0;
+  min-width: 3.6em;
 }
 
 .field input:not([type="checkbox"]),
 .field select {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .field-inline {
