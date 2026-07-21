@@ -1,0 +1,1 @@
+var e=`yorozu-key:`;function t(t){return`YOROZU が自動生成した予定です。\n${e}${t}`}function n(t){let n=t.indexOf(e);return n===-1?null:t.slice(n+11).split(/[\s<"]/)[0]||null}export{n,t};
