@@ -21,6 +21,18 @@ import type { PimProvider, UpsertResult } from "./provider";
 const LAST_RUN_META = "pim.lastrun.outlook";
 const AUTO_LS_KEY = "yorozu_pim_auto";
 const TODO_LS_KEY = "yorozu_pim_todo";
+const TARGET_LS_KEY = "yorozu_pim_target";
+
+export type PimTarget = "outlook" | "google" | "both";
+
+export function getPimTarget(): PimTarget {
+  const v = localStorage.getItem(TARGET_LS_KEY);
+  return v === "google" || v === "both" ? v : "outlook";
+}
+
+export function setPimTarget(t: PimTarget): void {
+  localStorage.setItem(TARGET_LS_KEY, t);
+}
 
 function writtenMeta(provider: PimProvider): string {
   // 旧キー互換: outlook は従来の pim.written.outlook をそのまま使う
@@ -96,35 +108,78 @@ export function splitForTodo(occurrences: readonly Occurrence[]): {
   return { calendar, todo };
 }
 
-/**
- * 発火予定を PIM へ書く。To Do 分割が有効なら reask/window はタスクに、
- * それ以外はカレンダーに (無効なら全部カレンダー)。
- */
-export async function pimWriteAll(
+interface TargetProviders {
+  calendar: PimProvider;
+  todo: PimProvider | null;
+}
+
+/** 1ターゲット (カレンダー + 任意のタスク) へ振り分けて書く */
+async function writeToTarget(
+  t: TargetProviders,
   occurrences: readonly Occurrence[],
   now: LocalDateTime,
-  providers?: { calendar: PimProvider; todo: PimProvider | null },
 ): Promise<UpsertResult> {
-  const calendar =
-    providers?.calendar ?? new (await import("./outlook")).OutlookPimProvider();
-  const todoProvider = providers
-    ? providers.todo
-    : isTodoSplitEnabled()
-      ? new (await import("./todo")).TodoPimProvider()
-      : null;
-
-  if (!todoProvider) return pimUpsert(calendar, occurrences, now);
-
+  if (!t.todo) return pimUpsert(t.calendar, occurrences, now);
   const split = splitForTodo(occurrences);
-  const [rc, rt] = [
-    await pimUpsert(calendar, split.calendar, now),
-    await pimUpsert(todoProvider, split.todo, now),
-  ];
+  const rc = await pimUpsert(t.calendar, split.calendar, now);
+  const rt = await pimUpsert(t.todo, split.todo, now);
   return {
     created: rc.created + rt.created,
     skipped: rc.skipped + rt.skipped,
     respected: rc.respected + rt.respected,
   };
+}
+
+/** 設定 (書き込み先 + To Do 分割) から実プロバイダの組を作る */
+async function configuredTargets(): Promise<TargetProviders[]> {
+  const target = getPimTarget();
+  const split = isTodoSplitEnabled();
+  const out: TargetProviders[] = [];
+  if (target === "outlook" || target === "both") {
+    const { OutlookPimProvider } = await import("./outlook");
+    out.push({
+      calendar: new OutlookPimProvider(),
+      todo: split ? new (await import("./todo")).TodoPimProvider() : null,
+    });
+  }
+  if (target === "google" || target === "both") {
+    const { GcalPimProvider } = await import("./gcal");
+    out.push({
+      calendar: new GcalPimProvider(),
+      todo: split ? new (await import("./gtasks")).GTasksPimProvider() : null,
+    });
+  }
+  return out;
+}
+
+/**
+ * 発火予定を PIM へ書く。書き込み先 (Outlook/Google/両方) と To Do 分割の
+ * 設定に従う。片方の失敗はもう片方を止めない (失敗分は診断ログへ)。
+ */
+export async function pimWriteAll(
+  occurrences: readonly Occurrence[],
+  now: LocalDateTime,
+  providers?: TargetProviders,
+): Promise<UpsertResult> {
+  const targets = providers ? [providers] : await configuredTargets();
+  const total: UpsertResult = { created: 0, skipped: 0, respected: 0 };
+  let failures = 0;
+  for (const t of targets) {
+    try {
+      const r = await writeToTarget(t, occurrences, now);
+      total.created += r.created;
+      total.skipped += r.skipped;
+      total.respected += r.respected;
+    } catch (e) {
+      failures += 1;
+      dlog("pim", `書き込み失敗 [${t.calendar.kind}]`, e);
+      if (targets.length === 1) throw e; // 単一ターゲットなら従来どおり失敗を伝える
+    }
+  }
+  if (failures > 0 && failures === targets.length) {
+    throw new Error("すべての書き込み先で失敗しました (診断ログ参照)");
+  }
+  return total;
 }
 
 /** 現在の DB 全体から horizon 分の発火予定を計算して書く */
@@ -149,7 +204,11 @@ export async function pimUpsertAll(
  * (次回起動 or 手動ボタンで追いつく)。
  */
 export async function autoPimUpsert(): Promise<UpsertResult | null> {
-  if (!isAutoPimEnabled() || !msLikelySignedIn()) {
+  const target = getPimTarget();
+  const { gSignedIn } = await import("../google/auth");
+  const msOk = target !== "google" && msLikelySignedIn();
+  const gOk = target !== "outlook" && gSignedIn();
+  if (!isAutoPimEnabled() || (!msOk && !gOk)) {
     dlog("pim", "auto: skip (無効 or 未サインイン)");
     return null;
   }

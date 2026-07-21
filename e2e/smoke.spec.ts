@@ -50,7 +50,7 @@ test("キャプチャ → トリアージ → ブリーフ → 同期 → リロ
 
   // 4. 同期 (ブラウザ内IDBリモート)
   await page.getByRole("button", { name: "設定" }).click();
-  await page.locator("select").selectOption("idb");
+  await page.locator("select").first().selectOption("idb");
   await page.getByRole("button", { name: "今すぐ同期" }).click();
   await expect(page.getByText(/同期完了/)).toBeVisible();
 

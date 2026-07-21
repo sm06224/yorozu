@@ -124,3 +124,32 @@ describe("To Do 振り分け (#17)", () => {
     expect(cal.created).toHaveLength(2);
   });
 });
+
+describe("複数ターゲット書き込み (#40)", () => {
+  test("両ターゲット成功で合算される", async () => {
+    const cal = new FakePim();
+    Object.defineProperty(cal, "kind", { value: "fake-a" });
+    const occs = [occ("2026-07-21T09:00")];
+    // pimWriteAll は providers 指定で1ターゲット。両ターゲットは
+    // configuredTargets 経由なので、ここでは1ターゲットずつの独立性を確認
+    const r1 = await pimWriteAll(occs, NOW, { calendar: cal, todo: null });
+    expect(r1.created).toBe(1);
+    const cal2 = new FakePim();
+    Object.defineProperty(cal2, "kind", { value: "fake-b" });
+    const r2 = await pimWriteAll(occs, NOW, { calendar: cal2, todo: null });
+    expect(r2.created).toBe(1); // 記録がターゲット別なので b でも新規作成される
+  });
+
+  test("単一ターゲットの失敗は従来どおり throw する", async () => {
+    const bad = new FakePim();
+    bad.createEntries = async () => {
+      throw new Error("boom");
+    };
+    await expect(
+      pimWriteAll([occ("2026-07-21T09:00")], NOW, {
+        calendar: bad,
+        todo: null,
+      }),
+    ).rejects.toThrow("boom");
+  });
+});

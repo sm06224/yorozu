@@ -13,9 +13,12 @@ import {
 import { buildTestEvent, createCalendarEvent } from "../pim/graph";
 import { msAccessToken, msAccount, msSignIn, msSignOut } from "../pim/msal";
 import {
+  getPimTarget,
   isAutoPimEnabled,
   isTodoSplitEnabled,
+  type PimTarget,
   setAutoPimEnabled,
+  setPimTarget,
   setTodoSplitEnabled,
 } from "../pim/sync";
 import {
@@ -48,6 +51,9 @@ export function SettingsView() {
   const [msBusy, setMsBusy] = useState(false);
   const [pimAuto, setPimAuto] = useState(() => isAutoPimEnabled());
   const [pimTodo, setPimTodo] = useState(() => isTodoSplitEnabled());
+  const [pimTarget, setPimTargetState] = useState<PimTarget>(() =>
+    getPimTarget(),
+  );
 
   const [gClientId, setGClientId] = useState(() => getGoogleClientId());
   const [gSigned, setGSigned] = useState(() => gSignedIn());
@@ -344,6 +350,28 @@ export function SettingsView() {
         )}
       </div>
       {gStatus && <p className="sync-status">{gStatus}</p>}
+
+      <h2>予定表への書き込み先</h2>
+      <p className="hint">
+        発火予定 (⏰締切など) をどのカレンダー/タスクに書くか。To Do
+        分割のチェック (Microsoft 連携内) は Google 選択時は Google Tasks
+        に適用されます。
+      </p>
+      <label className="field">
+        <span>書き込み先</span>
+        <select
+          value={pimTarget}
+          onChange={(e) => {
+            const v = e.target.value as PimTarget;
+            setPimTarget(v);
+            setPimTargetState(v);
+          }}
+        >
+          <option value="outlook">Outlook のみ</option>
+          <option value="google">Google のみ</option>
+          <option value="both">両方</option>
+        </select>
+      </label>
 
       <h2>診断ログ</h2>
       <p className="hint">
