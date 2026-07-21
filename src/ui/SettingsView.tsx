@@ -5,7 +5,12 @@ import { db } from "../db/db";
 import { clearLog, type LogEntry, logText, readLog } from "../debug/log";
 import { buildTestEvent, createCalendarEvent } from "../pim/graph";
 import { msAccessToken, msAccount, msSignIn, msSignOut } from "../pim/msal";
-import { isAutoPimEnabled, setAutoPimEnabled } from "../pim/sync";
+import {
+  isAutoPimEnabled,
+  isTodoSplitEnabled,
+  setAutoPimEnabled,
+  setTodoSplitEnabled,
+} from "../pim/sync";
 import {
   getConfiguredProvider,
   getSyncKind,
@@ -35,6 +40,7 @@ export function SettingsView() {
   const [msStatus, setMsStatus] = useState("");
   const [msBusy, setMsBusy] = useState(false);
   const [pimAuto, setPimAuto] = useState(() => isAutoPimEnabled());
+  const [pimTodo, setPimTodo] = useState(() => isTodoSplitEnabled());
 
   const [logEntries, setLogEntries] = useState<LogEntry[]>(() => readLog());
   const [logStatus, setLogStatus] = useState("");
@@ -220,6 +226,19 @@ export function SettingsView() {
               }}
             />
             <span>📆 アプリを開いた時に Outlook へ自動書き込み</span>
+          </label>
+          <label className="field field-inline">
+            <input
+              type="checkbox"
+              checked={pimTodo}
+              onChange={(e) => {
+                setTodoSplitEnabled(e.target.checked);
+                setPimTodo(e.target.checked);
+              }}
+            />
+            <span>
+              🔁 再確認・期間は To Do のタスクに書く (締切はカレンダーのまま)
+            </span>
           </label>
           <div className="field field-inline">
             <button
