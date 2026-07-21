@@ -18,9 +18,14 @@ import type { PimProvider, UpsertResult } from "./provider";
 // PIM 書き込みのオーケストレーション (#17 reconcile):
 // 「書いた記録」を meta に持ち、PIM 側で消されたエントリは再作成しない (PIM が勝つ)。
 
-const WRITTEN_META = "pim.written.outlook";
 const LAST_RUN_META = "pim.lastrun.outlook";
 const AUTO_LS_KEY = "yorozu_pim_auto";
+const TODO_LS_KEY = "yorozu_pim_todo";
+
+function writtenMeta(provider: PimProvider): string {
+  // 旧キー互換: outlook は従来の pim.written.outlook をそのまま使う
+  return `pim.written.${provider.kind}`;
+}
 
 export function isAutoPimEnabled(): boolean {
   return localStorage.getItem(AUTO_LS_KEY) !== "0";
@@ -28,6 +33,15 @@ export function isAutoPimEnabled(): boolean {
 
 export function setAutoPimEnabled(on: boolean): void {
   localStorage.setItem(AUTO_LS_KEY, on ? "1" : "0");
+}
+
+/** 再確認/期間を To Do のタスクとして書くか (既定 OFF = 全部カレンダー) */
+export function isTodoSplitEnabled(): boolean {
+  return localStorage.getItem(TODO_LS_KEY) === "1";
+}
+
+export function setTodoSplitEnabled(on: boolean): void {
+  localStorage.setItem(TODO_LS_KEY, on ? "1" : "0");
 }
 
 function windowEnd(last: Occurrence): LocalDateTime {
@@ -47,18 +61,20 @@ export async function pimUpsert(
   const last = sorted[sorted.length - 1] as Occurrence;
 
   const existing = await provider.listExistingKeys(first.at, windowEnd(last));
-  const written = new Set((await getMeta<string[]>(db, WRITTEN_META)) ?? []);
+  const written = new Set(
+    (await getMeta<string[]>(db, writtenMeta(provider))) ?? [],
+  );
 
   const plan = planUpsert(sorted, existing, written);
   dlog(
     "pim",
-    `plan: create=${plan.toCreate.length} skip=${plan.skippedExisting} respect=${plan.respectedDeleted} (existing=${existing.size} written=${written.size})`,
+    `plan[${provider.kind}]: create=${plan.toCreate.length} skip=${plan.skippedExisting} respect=${plan.respectedDeleted} (existing=${existing.size} written=${written.size})`,
   );
   await provider.createEntries(plan.toCreate);
 
   for (const o of plan.toCreate) written.add(o.key);
   for (const k of existing) written.add(k);
-  await setMeta(db, WRITTEN_META, pruneWrittenKeys(written, now));
+  await setMeta(db, writtenMeta(provider), pruneWrittenKeys(written, now));
 
   return {
     created: plan.toCreate.length,
@@ -67,9 +83,52 @@ export async function pimUpsert(
   };
 }
 
-/** 現在の DB 全体から horizon 分の発火予定を計算して upsert する */
+/** kind による振り分け (設計書 §2): 締切/ブリーフ→カレンダー、再確認/期間→To Do */
+export function splitForTodo(occurrences: readonly Occurrence[]): {
+  calendar: Occurrence[];
+  todo: Occurrence[];
+} {
+  const calendar: Occurrence[] = [];
+  const todo: Occurrence[] = [];
+  for (const o of occurrences) {
+    (o.kind === "reask" || o.kind === "window" ? todo : calendar).push(o);
+  }
+  return { calendar, todo };
+}
+
+/**
+ * 発火予定を PIM へ書く。To Do 分割が有効なら reask/window はタスクに、
+ * それ以外はカレンダーに (無効なら全部カレンダー)。
+ */
+export async function pimWriteAll(
+  occurrences: readonly Occurrence[],
+  now: LocalDateTime,
+  providers?: { calendar: PimProvider; todo: PimProvider | null },
+): Promise<UpsertResult> {
+  const calendar =
+    providers?.calendar ?? new (await import("./outlook")).OutlookPimProvider();
+  const todoProvider = providers
+    ? providers.todo
+    : isTodoSplitEnabled()
+      ? new (await import("./todo")).TodoPimProvider()
+      : null;
+
+  if (!todoProvider) return pimUpsert(calendar, occurrences, now);
+
+  const split = splitForTodo(occurrences);
+  const [rc, rt] = [
+    await pimUpsert(calendar, split.calendar, now),
+    await pimUpsert(todoProvider, split.todo, now),
+  ];
+  return {
+    created: rc.created + rt.created,
+    skipped: rc.skipped + rt.skipped,
+    respected: rc.respected + rt.respected,
+  };
+}
+
+/** 現在の DB 全体から horizon 分の発火予定を計算して書く */
 export async function pimUpsertAll(
-  provider: PimProvider,
   now: LocalDateTime = wallClockNow(),
 ): Promise<UpsertResult> {
   const [items, rules] = await Promise.all([
@@ -81,7 +140,7 @@ export async function pimUpsertAll(
     days: DEFAULT_HORIZON_DAYS,
     hour: DEFAULT_REMIND_HOUR,
   });
-  return pimUpsert(provider, occurrences, now);
+  return pimWriteAll(occurrences, now);
 }
 
 /**
@@ -101,8 +160,7 @@ export async function autoPimUpsert(): Promise<UpsertResult | null> {
     return null;
   }
   try {
-    const { OutlookPimProvider } = await import("./outlook");
-    const r = await pimUpsertAll(new OutlookPimProvider(), now);
+    const r = await pimUpsertAll(now);
     await setMeta(db, LAST_RUN_META, now);
     dlog("pim", `auto: ok created=${r.created} skipped=${r.skipped}`);
     return r;
