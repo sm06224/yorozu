@@ -3,7 +3,7 @@ import { ensurePermission, FsaStorageProvider } from "./fsa";
 import { IdbStorageProvider } from "./idb";
 import type { StorageProvider } from "./provider";
 
-export type SyncKind = "none" | "idb" | "fsa" | "onedrive";
+export type SyncKind = "none" | "idb" | "fsa" | "onedrive" | "gdrive";
 
 const KIND_KEY = "sync.kind";
 const FSA_HANDLE_KEY = "sync.fsa_handle";
@@ -40,6 +40,13 @@ export async function getConfiguredProvider(
     const { msAccount } = await import("../pim/msal");
     if (!(await msAccount())) return null; // 未サインインなら静かに諦める
     return new OneDriveStorageProvider();
+  }
+  if (kind === "gdrive") {
+    const { gAccessToken } = await import("../google/auth");
+    // 未サインイン/トークン切れは静かに諦める (interactive はユーザー操作起点のみ)
+    if (!gAccessToken(interactive)) return null;
+    const { GDriveStorageProvider } = await import("./gdrive");
+    return new GDriveStorageProvider();
   }
   if (kind === "fsa") {
     const handle = await getMeta<FileSystemDirectoryHandle>(db, FSA_HANDLE_KEY);

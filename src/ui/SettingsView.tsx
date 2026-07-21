@@ -3,6 +3,13 @@ import { getApiKey, KEY_CONSENT_TEXT, setApiKey } from "../ai/key";
 import { wallClockNow } from "../core";
 import { db } from "../db/db";
 import { clearLog, type LogEntry, logText, readLog } from "../debug/log";
+import {
+  getGoogleClientId,
+  gSignedIn,
+  gSignIn,
+  gSignOut,
+  setGoogleClientId,
+} from "../google/auth";
 import { buildTestEvent, createCalendarEvent } from "../pim/graph";
 import { msAccessToken, msAccount, msSignIn, msSignOut } from "../pim/msal";
 import {
@@ -41,6 +48,10 @@ export function SettingsView() {
   const [msBusy, setMsBusy] = useState(false);
   const [pimAuto, setPimAuto] = useState(() => isAutoPimEnabled());
   const [pimTodo, setPimTodo] = useState(() => isTodoSplitEnabled());
+
+  const [gClientId, setGClientId] = useState(() => getGoogleClientId());
+  const [gSigned, setGSigned] = useState(() => gSignedIn());
+  const [gStatus, setGStatus] = useState("");
 
   const [logEntries, setLogEntries] = useState<LogEntry[]>(() => readLog());
   const [logStatus, setLogStatus] = useState("");
@@ -140,7 +151,7 @@ export function SettingsView() {
       <h2>同期・バックアップ</h2>
       <p className="hint">
         app 専用フォルダに journal.jsonl (変更ログ) と snapshot.json を書き、
-        それがそのままバックアップになります。Google Drive アダプタは今後追加。
+        それがそのままバックアップになります。
       </p>
       <label className="field">
         <span>同期先</span>
@@ -152,6 +163,9 @@ export function SettingsView() {
           <option value="idb">このブラウザ (IndexedDB / 動作確認用)</option>
           <option value="onedrive">
             OneDrive (approot / 要 Microsoft サインイン)
+          </option>
+          <option value="gdrive">
+            Google Drive (appDataFolder / 要 Google サインイン)
           </option>
           <option value="fsa" disabled={!fsaSupported()}>
             フォルダ (File System Access
@@ -270,6 +284,66 @@ export function SettingsView() {
         </div>
       )}
       {msStatus && <p className="sync-status">{msStatus}</p>}
+
+      <h2>Google 連携</h2>
+      <p className="hint">
+        Google Drive (appDataFolder) 同期に使います。初回はクライアント ID
+        の作成が必要です (手順は Issue #40)。ID
+        は公開識別子で秘密ではありません。
+        トークンは約1時間で切れ、同期時に自動更新されます (画面が一瞬 Google
+        を経由することがあります)。
+      </p>
+      <label className="field">
+        <span>クライアントID</span>
+        <input
+          type="text"
+          placeholder="xxxx.apps.googleusercontent.com"
+          value={gClientId}
+          onChange={(e) => setGClientId(e.target.value)}
+          autoComplete="off"
+        />
+      </label>
+      <div className="field field-inline">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => {
+            setGoogleClientId(gClientId);
+            setGStatus("クライアントIDを保存しました");
+          }}
+        >
+          保存
+        </button>
+        {gSigned ? (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              gSignOut();
+              setGSigned(false);
+              setGStatus("サインアウトしました");
+            }}
+          >
+            Google からサインアウト
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              try {
+                setGoogleClientId(gClientId);
+                gSignIn();
+              } catch (e) {
+                setGStatus(`❌ ${e instanceof Error ? e.message : String(e)}`);
+              }
+            }}
+          >
+            Google にサインイン
+          </button>
+        )}
+      </div>
+      {gStatus && <p className="sync-status">{gStatus}</p>}
 
       <h2>診断ログ</h2>
       <p className="hint">
