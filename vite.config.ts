@@ -19,7 +19,8 @@ const CSP = [
   // OneDrive のファイル内容 GET は 302 でダウンロード専用ドメインへ飛ぶ (Graph 仕様)。
   // リダイレクト先も connect-src の検査対象なので、個人用 OneDrive の
   // ダウンロードホストを許可する (XHR先が増えるだけで script-src は不変)
-  "connect-src 'self' https://api.anthropic.com https://graph.microsoft.com https://login.microsoftonline.com https://my.microsoftpersonalcontent.com https://*.storage.live.com https://*.1drv.com",
+  // www.googleapis.com は Drive/Calendar/Tasks API (認可画面はナビゲーションなので不要)
+  "connect-src 'self' https://api.anthropic.com https://graph.microsoft.com https://login.microsoftonline.com https://my.microsoftpersonalcontent.com https://*.storage.live.com https://*.1drv.com https://www.googleapis.com",
   "worker-src 'self'",
   "base-uri 'self'",
   "form-action 'self'",
