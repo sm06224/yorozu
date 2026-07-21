@@ -411,6 +411,17 @@ textarea {
   color: var(--accent);
 }
 
+.weekly-summary {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.6rem;
+  margin-top: 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .debug-log {
   background: var(--bg-raised);
   border: 1px solid var(--border);
