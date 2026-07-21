@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { getApiKey, KEY_CONSENT_TEXT, setApiKey } from "../ai/key";
 import { wallClockNow } from "../core";
 import { db } from "../db/db";
+import { clearLog, type LogEntry, logText, readLog } from "../debug/log";
 import { buildTestEvent, createCalendarEvent } from "../pim/graph";
 import { msAccessToken, msAccount, msSignIn, msSignOut } from "../pim/msal";
 import { isAutoPimEnabled, setAutoPimEnabled } from "../pim/sync";
@@ -14,6 +15,8 @@ import {
 } from "../sync/config";
 import { syncOnce } from "../sync/engine";
 import { fsaSupported, pickSyncFolder } from "../sync/fsa";
+
+const LOG_SHOWN = 100;
 
 export function SettingsView() {
   const [kind, setKind] = useState<SyncKind>("none");
@@ -32,6 +35,20 @@ export function SettingsView() {
   const [msStatus, setMsStatus] = useState("");
   const [msBusy, setMsBusy] = useState(false);
   const [pimAuto, setPimAuto] = useState(() => isAutoPimEnabled());
+
+  const [logEntries, setLogEntries] = useState<LogEntry[]>(() => readLog());
+  const [logStatus, setLogStatus] = useState("");
+
+  async function copyLog() {
+    try {
+      await navigator.clipboard.writeText(logText());
+      setLogStatus("✅ クリップボードにコピーしました");
+    } catch (e) {
+      setLogStatus(
+        `❌ コピー失敗: ${e instanceof Error ? e.message : String(e)}`,
+      );
+    }
+  }
 
   const kindTouched = useRef(false);
 
@@ -117,8 +134,7 @@ export function SettingsView() {
       <h2>同期・バックアップ</h2>
       <p className="hint">
         app 専用フォルダに journal.jsonl (変更ログ) と snapshot.json を書き、
-        それがそのままバックアップになります。OneDrive/Google Drive
-        アダプタは今後追加。
+        それがそのままバックアップになります。Google Drive アダプタは今後追加。
       </p>
       <label className="field">
         <span>同期先</span>
@@ -235,6 +251,46 @@ export function SettingsView() {
         </div>
       )}
       {msStatus && <p className="sync-status">{msStatus}</p>}
+
+      <h2>診断ログ</h2>
+      <p className="hint">
+        同期・PIM・添付の動作記録 (最新{LOG_SHOWN}件)。不具合報告の時は [コピー]
+        して Issue に貼ってください。トークンやキーは記録されません。
+      </p>
+      <div className="field field-inline">
+        <button
+          type="button"
+          className="btn"
+          onClick={() => setLogEntries(readLog())}
+        >
+          🔄 更新
+        </button>
+        <button type="button" className="btn" onClick={() => void copyLog()}>
+          📋 コピー
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={() => {
+            clearLog();
+            setLogEntries([]);
+          }}
+        >
+          クリア
+        </button>
+      </div>
+      {logStatus && <p className="sync-status">{logStatus}</p>}
+      {logEntries.length > 0 && (
+        <pre className="debug-log">
+          {logEntries
+            .slice(-LOG_SHOWN)
+            .map(
+              (e) =>
+                `${e.t.slice(11, 19)} [${e.scope}] ${e.msg}${e.data ? ` ${e.data}` : ""}`,
+            )
+            .join("\n")}
+        </pre>
+      )}
     </section>
   );
 }

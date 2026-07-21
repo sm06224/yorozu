@@ -1,3 +1,4 @@
+import { dlog } from "../debug/log";
 import { msAccessToken } from "../pim/msal";
 import type { StorageProvider } from "./provider";
 import {
@@ -29,13 +30,20 @@ async function downloadUrlOf(name: string): Promise<string | null> {
   const res = await fetch(`${BASE}:/${encodeURIComponent(name)}`, {
     headers: { Authorization: `Bearer ${await getToken()}` },
   });
-  if (res.status === 404) return null;
+  if (res.status === 404) {
+    dlog("onedrive", `meta ${name}: 404 (未作成)`);
+    return null;
+  }
   if (!res.ok)
     throw new Error(
       `OneDrive メタ取得 ${res.status}: ${(await res.text()).slice(0, 200)}`,
     );
   const meta = (await res.json()) as Record<string, unknown>;
   const url = meta["@microsoft.graph.downloadUrl"];
+  dlog(
+    "onedrive",
+    `meta ${name}: size=${meta.size} downloadUrl=${typeof url === "string" ? new URL(url).host : "無し!"}`,
+  );
   return typeof url === "string" ? url : null;
 }
 
@@ -44,7 +52,9 @@ async function readBlob(name: string): Promise<Blob | null> {
   if (!url) return null;
   const res = await fetch(url); // 事前認証済み URL: ヘッダ不要・CORS 可
   if (!res.ok) throw new Error(`OneDrive ダウンロード ${res.status}`);
-  return res.blob();
+  const blob = await res.blob();
+  dlog("onedrive", `download ${name}: ${blob.size}B`);
+  return blob;
 }
 
 async function readText(name: string): Promise<string | null> {
@@ -65,6 +75,7 @@ async function writeText(name: string, content: string): Promise<void> {
     throw new Error(
       `OneDrive 書込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
     );
+  dlog("onedrive", `put ${name}: ${content.length}B ok`);
 }
 
 export class OneDriveStorageProvider implements StorageProvider {
@@ -124,6 +135,7 @@ export class OneDriveStorageProvider implements StorageProvider {
       throw new Error(
         `OneDrive 書込 ${res.status}: ${(await res.text()).slice(0, 200)}`,
       );
+    dlog("onedrive", `putFile ${name}: ${data.size}B ok`);
   }
 
   async getFile(name: string): Promise<Blob | null> {

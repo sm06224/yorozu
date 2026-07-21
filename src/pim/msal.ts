@@ -1,4 +1,5 @@
 import type { AccountInfo, PublicClientApplication } from "@azure/msal-browser";
+import { dlog } from "../debug/log";
 
 // OAuth (PKCE) Spike — 設計書 §8 W0 / §10-0。
 // ブラウザ完結・クライアントシークレット無し。トークンは MSAL が
@@ -71,11 +72,16 @@ export async function msAccessToken(
 ): Promise<string | null> {
   const pca = await ensureMsal();
   const account = await msAccount();
-  if (!account) return null;
+  if (!account) {
+    dlog("msal", "アカウント無し (未サインイン)");
+    return null;
+  }
   try {
     const r = await pca.acquireTokenSilent({ scopes: GRAPH_SCOPES, account });
+    dlog("msal", "silent token ok");
     return r.accessToken;
-  } catch {
+  } catch (e) {
+    dlog("msal", `silent 失敗 interactive=${interactive}`, e);
     if (interactive) {
       await pca.acquireTokenRedirect({ scopes: GRAPH_SCOPES, account });
     }

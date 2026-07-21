@@ -1,4 +1,5 @@
 import { type AttachmentRef, newId } from "../core";
+import { dlog } from "../debug/log";
 import { getConfiguredProvider } from "../sync/config";
 import type { StorageProvider } from "../sync/provider";
 import { db as defaultDb, getMeta, setMeta, type YorozuDB } from "./db";
@@ -56,6 +57,7 @@ export function makeAttachments(
       now,
     );
     await setPending([...(await pending()), ref.file_id]);
+    dlog("att", `add ${ref.name} ${ref.size}B → ${ref.file_id}`);
     await pushPendingAttachments().catch(() => undefined); // 失敗は保留のまま
     return ref;
   }
@@ -65,7 +67,11 @@ export function makeAttachments(
     const local = await db.blobs.get(fileId);
     if (local) return new Blob([local.bytes], { type: local.type });
     const provider = await getProvider();
-    if (!provider?.getFile) return null;
+    if (!provider?.getFile) {
+      dlog("att", `get ${fileId}: ローカルに無くリモートも未設定`);
+      return null;
+    }
+    dlog("att", `get ${fileId}: リモートから遅延ダウンロード`);
     const blob = await provider.getFile(remoteName(fileId));
     if (blob) {
       await db.blobs.put({
@@ -120,6 +126,9 @@ export function makeAttachments(
       }
     }
     await setPending(rest);
+    if (uploaded > 0 || rest.length > 0) {
+      dlog("att", `pushPending: uploaded=${uploaded} 残り=${rest.length}`);
+    }
     return uploaded;
   }
 
