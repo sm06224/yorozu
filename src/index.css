@@ -411,6 +411,19 @@ textarea {
   color: var(--accent);
 }
 
+.debug-log {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.4rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  max-height: 20rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .error-boundary {
   padding: 1rem 0.5rem;
   display: flex;

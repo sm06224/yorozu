@@ -27,10 +27,19 @@ export function App() {
   // 添付 blob の保留アップロードもここで追いつかせる (#25)
   useEffect(() => {
     void (async () => {
+      const { dlog } = await import("../debug/log");
       const provider = await getConfiguredProvider(db, false);
-      if (provider) await syncOnce(db, provider).catch(() => undefined);
+      if (provider) {
+        await syncOnce(db, provider).catch((e) =>
+          dlog("app", "開時同期 失敗", e),
+        );
+      } else {
+        dlog("app", "開時同期 skip (同期先なし/権限なし)");
+      }
       const { pushPendingAttachments } = await import("../db/attachments");
-      await pushPendingAttachments().catch(() => undefined);
+      await pushPendingAttachments().catch((e) =>
+        dlog("app", "保留添付アップロード 失敗", e),
+      );
     })();
   }, []);
 

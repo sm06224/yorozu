@@ -10,6 +10,7 @@ import {
   wallClockNow,
 } from "../core";
 import { db, getMeta, setMeta } from "../db/db";
+import { dlog } from "../debug/log";
 import { msLikelySignedIn } from "./msal";
 import { planUpsert, pruneWrittenKeys } from "./plan";
 import type { PimProvider, UpsertResult } from "./provider";
@@ -49,6 +50,10 @@ export async function pimUpsert(
   const written = new Set((await getMeta<string[]>(db, WRITTEN_META)) ?? []);
 
   const plan = planUpsert(sorted, existing, written);
+  dlog(
+    "pim",
+    `plan: create=${plan.toCreate.length} skip=${plan.skippedExisting} respect=${plan.respectedDeleted} (existing=${existing.size} written=${written.size})`,
+  );
   await provider.createEntries(plan.toCreate);
 
   for (const o of plan.toCreate) written.add(o.key);
@@ -85,16 +90,24 @@ export async function pimUpsertAll(
  * (次回起動 or 手動ボタンで追いつく)。
  */
 export async function autoPimUpsert(): Promise<UpsertResult | null> {
-  if (!isAutoPimEnabled() || !msLikelySignedIn()) return null;
+  if (!isAutoPimEnabled() || !msLikelySignedIn()) {
+    dlog("pim", "auto: skip (無効 or 未サインイン)");
+    return null;
+  }
   const now = wallClockNow();
   const lastRun = (await getMeta<string>(db, LAST_RUN_META)) ?? "";
-  if (lastRun && minutesBetween(lastRun, now) < 60) return null;
+  if (lastRun && minutesBetween(lastRun, now) < 60) {
+    dlog("pim", `auto: skip (前回 ${lastRun} から1時間未満)`);
+    return null;
+  }
   try {
     const { OutlookPimProvider } = await import("./outlook");
     const r = await pimUpsertAll(new OutlookPimProvider(), now);
     await setMeta(db, LAST_RUN_META, now);
+    dlog("pim", `auto: ok created=${r.created} skipped=${r.skipped}`);
     return r;
-  } catch {
+  } catch (e) {
+    dlog("pim", "auto: 失敗 (次回に持ち越し)", e);
     return null;
   }
 }

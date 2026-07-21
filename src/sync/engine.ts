@@ -1,5 +1,6 @@
 import { addDays, dateOf, type LocalDateTime, wallClockNow } from "../core";
 import { getMeta, setMeta, type YorozuDB } from "../db/db";
+import { dlog } from "../debug/log";
 import { getDeviceId } from "./device";
 import {
   type JournalEntry,
@@ -129,6 +130,7 @@ export async function syncOnce(
   let cursor = (await getMeta<number>(db, cursorKey(provider))) ?? 0;
   let applied = 0;
   let pulled = 0;
+  dlog("sync", `start kind=${provider.kind} cursor=${cursor}`);
 
   // 新規端末: snapshot からブートストラップ (journal 全再生の短絡)
   if (cursor === 0) {
@@ -136,12 +138,17 @@ export async function syncOnce(
     if (boot) {
       applied += boot.applied;
       cursor = boot.cursor;
+      dlog(
+        "sync",
+        `bootstrap from snapshot cursor=${cursor} applied=${boot.applied}`,
+      );
     }
   } else if (provider.journalBase) {
     // 取り残し端末: カーソルより先まで journal が切り詰められていたら
     // snapshot (切り詰め範囲を必ず含む) で追いつく (#25)
     const base = await provider.journalBase();
     if (cursor < base) {
+      dlog("sync", `cursor ${cursor} < base ${base}: snapshot で追いつく`);
       const boot = await bootstrapFromSnapshot(db, provider);
       if (!boot) {
         throw new Error(
@@ -161,8 +168,12 @@ export async function syncOnce(
   const entries = lines
     .map(parseEntry)
     .filter((e): e is JournalEntry => e !== null);
+  if (lines.length > entries.length) {
+    dlog("sync", `壊れた行を ${lines.length - entries.length} 行スキップ`);
+  }
   applied += await applyEntries(db, entries);
   cursor += lines.length;
+  if (pulled > 0) dlog("sync", `pull ${pulled} 行 applied=${applied}`);
 
   // push: outbox を追記
   const outbox = await db.outbox.orderBy("seq").toArray();
@@ -189,6 +200,7 @@ export async function syncOnce(
       const newLen = await provider.appendJournal(seed.map(serializeEntry));
       pushed += seed.length;
       if (newLen === seed.length) cursor = newLen;
+      dlog("sync", `空リモートへ全量種まき ${seed.length} 行`);
     }
   }
 
@@ -204,6 +216,7 @@ export async function syncOnce(
     // 追記中に他端末の書き込みが挟まらなければ自分の行は読み戻さなくてよい。
     // 挟まった場合はカーソルを進めず、次回 pull で LWW が no-op として吸収する。
     if (newLen === cursor + outbox.length) cursor = newLen;
+    dlog("sync", `push ${outbox.length} 行 newLen=${newLen} cursor=${cursor}`);
   }
 
   await setMeta(db, cursorKey(provider), cursor);
@@ -236,6 +249,10 @@ export async function syncOnce(
     };
     await provider.writeSnapshot(JSON.stringify(snap));
     await setMeta(db, `sync.snaplen.${provider.kind}`, cursor);
+    dlog(
+      "sync",
+      `snapshot 書込 journal_len=${cursor} items=${snap.items.length} tombstones=${snap.tombstones.length}`,
+    );
 
     // compaction (#25): snapshot 済み範囲の journal を切り詰めて
     // read-modify-write 追記のコストを抑える。末尾は残して
@@ -244,9 +261,11 @@ export async function syncOnce(
       const upTo = cursor - COMPACT_KEEP_TAIL;
       if (upTo - base >= COMPACT_MIN_GAIN) {
         await provider.compactJournal(upTo);
+        dlog("sync", `compaction 実行 upTo=${upTo} (旧base=${base})`);
       }
     }
   }
 
+  dlog("sync", `done pulled=${pulled} applied=${applied} pushed=${pushed}`);
   return { pulled, applied, pushed };
 }

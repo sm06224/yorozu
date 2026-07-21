@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from "react";
+import { dlog } from "../debug/log";
 
 // 白画面防止 (#25 の教訓): 描画中の例外はここで止めて、
 // エラー内容と再読込の導線を必ず見せる。データは Dexie にあるので消えない。
@@ -11,6 +12,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
+    dlog("crash", error.message, error.stack?.slice(0, 400));
     return { error };
   }
 
